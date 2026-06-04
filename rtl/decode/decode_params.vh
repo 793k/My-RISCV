@@ -4,15 +4,22 @@
 // --------------------------------------------------
 // 操作码常量
 // --------------------------------------------------
-`define opcode_I      7'b0010011
-`define opcode_R      7'b0110011
-`define opcode_BRANCH 7'b1100011
+`define opcode_I        7'b0010011
+`define opcode_R        7'b0110011
+`define opcode_BRANCH   7'b1100011
+`define opcode_U_lui    7'b0110111
+`define opcode_U_auipc  7'b0010111
+`define opcode_J_jal    7'b1101111
+`define opcode_J_jalr   7'b1100111
 
 `define op2_sel_defaut  5'd0
 `define op2_sel_I       5'd1
 `define op2_sel_I_shamt 5'd2
 `define op2_sel_R       5'd3
 `define op2_sel_branch  5'd4
+`define op2_sel_U       5'd5
+`define op2_sel_J_jar   5'd6
+`define op2_sel_J_jalr  5'd7
 // --------------------------------------------------
 // funct3 常量 - I-type
 // --------------------------------------------------
@@ -87,9 +94,7 @@
 // --------------------------------------------------
 // instr_sel 常量 U-type
 // --------------------------------------------------
-`define instr_sel_beq  6'd25
-`define instr_sel_bne  6'd26
-`define instr_sel_blt  6'd27
-`define instr_sel_bge  6'd28
-`define instr_sel_bltu 6'd29
-`define instr_sel_bgeu 6'd30
+`define instr_sel_lui       6'd25
+`define instr_sel_auipc     6'd26
+`define instr_sel_jal       6'd27
+`define instr_sel_jalr      6'd28

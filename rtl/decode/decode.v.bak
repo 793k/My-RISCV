@@ -31,7 +31,7 @@ module decode (
     wire [32:0] imm_branch;
     wire [32:0] imm_U;
     wire [32:0] imm_jal;
-    wire [32:0] imm_jalr;
+    wire [32:0] imm_jalr
 
     // --------------------------------------------------
     // 字段提取（纯组合逻辑）
@@ -64,8 +64,8 @@ module decode (
     assign imm_U = {instr[31:12], 12'd0};  //U类立即数
 
     assign imm_jal = {
-        {12{instr[31]}}, instr[31], instr[21:12], instr[22], instr[30:23], 1'd0
-    };  //jal立即数
+        {12{instr[31]}}, imstr[31], imstr[21:12], imstr[22], imstr[30:23], 1'd0
+    };//jal立即数
 
     // --------------------------------------------------
     // 控制译码实例化

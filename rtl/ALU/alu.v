@@ -72,44 +72,55 @@ module alu (
                 end
 
             //branch类
-            `instr_sel_beq : begin
+            `instr_sel_beq  : begin
                 if (op1 == op2) begin
                     jump_addr = jump_op1 + jump_op2;
                     jump_en = 1'd1;
                 end
             end
-            `instr_sel_bne : begin
+            `instr_sel_bne  : begin
                 if (op1 != op2) begin
                     jump_addr = jump_op1 + jump_op2;
                     jump_en = 1'd1;
                 end
             end
-            `instr_sel_blt : begin
+            `instr_sel_blt  : begin
                 if ($signed(op1) < $signed(op2)) begin
                     jump_addr = jump_op1 + jump_op2;
                     jump_en = 1'd1;
                 end
             end
-            `instr_sel_bge : begin
+            `instr_sel_bge  : begin
                 if ($signed(op1) >= $signed(op2)) begin
                     jump_addr = jump_op1 + jump_op2;
                     jump_en = 1'd1;
                 end
             end
-            `instr_sel_bltu: begin
+            `instr_sel_bltu : begin
                 if (op1 < op2) begin
                     jump_addr = jump_op1 + jump_op2;
                     jump_en = 1'd1;
                 end
             end
-            `instr_sel_bgeu: begin
+            `instr_sel_bgeu : begin
                 if (op1 >= op2) begin
                     jump_addr = jump_op1 + jump_op2;
                     jump_en = 1'd1;
                 end
             end
-
-            default: ;
+            `instr_sel_lui  : begin
+                rd_data = op2;
+            end
+            `instr_sel_auipc: begin
+                rd_data = op2 + jump_op1;
+            end
+            `instr_sel_jal  :
+                begin
+                    rd_data = jump_op1 + 4;
+                    jump_en = 1'd1;
+                    jump_addr = jump_op1+op2;
+                end
+            default         : ;
         endcase
     end
 

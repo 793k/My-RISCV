@@ -83,6 +83,21 @@ module decode_ctrl (
                 endcase
             end
 
+            `opcode_U_lui: begin
+                instr_sel = `instr_sel_lui;
+            end
+
+            `opcode_U_auipc: begin
+                instr_sel = `instr_sel_auipc;
+            end
+
+            `opcode_J_jal: begin
+                instr_sel = `instr_sel_jal;
+            end
+
+            `opcode_J_jalr: begin
+                instr_sel = `instr_sel_jalr;
+            end
             default: ;
         endcase
     end
