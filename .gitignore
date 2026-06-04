@@ -1,0 +1,29 @@
+# ModelSim/QuestaSim
+work/
+transcript
+vsim.wlf
+*.vcd
+modelsim.ini
+
+# Quartus
+quartus_project/db/
+quartus_project/incremental_db/
+quartus_project/output_files/
+quartus_project/simulation/
+quartus_project/*.rpt
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor
+.kilo/
+demo.code-workspace
+
+# Downloaded tools
+verible.zip
+tools/verible/
+tools/*.exe
+
+# Misc
+*.zip

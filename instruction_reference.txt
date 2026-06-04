@@ -1,0 +1,123 @@
+;; =============================================================================
+;; RISC-V 32I 指令参考手册（当前 CPU 支持子集）
+;; =============================================================================
+
+;; ========================== R-type 寄存器-寄存器运算 ==========================
+;; opcode = 0110011
+;; 格式：funct7 | rs2 | rs1 | funct3 | rd | opcode
+
+add   rd, rs1, rs2    加法
+    rd = rs1 + rs2
+    funct7=0000000, funct3=000
+
+sub   rd, rs1, rs2    减法
+    rd = rs1 - rs2
+    funct7=0100000, funct3=000
+
+sll   rd, rs1, rs2    逻辑左移
+    rd = rs1 << (rs2[4:0])
+    funct7=0000000, funct3=001
+
+slt   rd, rs1, rs2    有符号小于置位
+    rd = (signed(rs1) < signed(rs2)) ? 1 : 0
+    funct7=0000000, funct3=010
+
+sltu  rd, rs1, rs2    无符号小于置位
+    rd = (unsigned(rs1) < unsigned(rs2)) ? 1 : 0
+    funct7=0000000, funct3=011
+
+xor   rd, rs1, rs2    按位异或
+    rd = rs1 ^ rs2
+    funct7=0000000, funct3=100
+
+srl   rd, rs1, rs2    逻辑右移
+    rd = rs1 >> (rs2[4:0])    高位补 0
+    funct7=0000000, funct3=101
+
+sra   rd, rs1, rs2    算术右移
+    rd = signed(rs1) >>> (rs2[4:0])    高位补符号位
+    funct7=0100000, funct3=101
+
+or    rd, rs1, rs2    按位或
+    rd = rs1 | rs2
+    funct7=0000000, funct3=110
+
+and   rd, rs1, rs2    按位与
+    rd = rs1 & rs2
+    funct7=0000000, funct3=111
+
+
+;; ========================== I-type 立即数运算 ================================
+;; opcode = 0010011
+;; 格式：imm[11:0] | rs1 | funct3 | rd | opcode
+
+addi  rd, rs1, imm    立即数加法
+    rd = rs1 + sign_ext(imm[11:0])
+    funct3=000
+
+slti  rd, rs1, imm    有符号小于立即数置位
+    rd = (signed(rs1) < sign_ext(imm[11:0])) ? 1 : 0
+    funct3=010
+
+sltiu rd, rs1, imm    无符号小于立即数置位
+    rd = (unsigned(rs1) < sign_ext(imm[11:0])) ? 1 : 0
+    funct3=011
+
+xori  rd, rs1, imm    立即数按位异或
+    rd = rs1 ^ sign_ext(imm[11:0])
+    funct3=100
+
+ori   rd, rs1, imm    立即数按位或
+    rd = rs1 | sign_ext(imm[11:0])
+    funct3=110
+
+andi  rd, rs1, imm    立即数按位与
+    rd = rs1 & sign_ext(imm[11:0])
+    funct3=111
+
+
+;; ========================== Shift I-type 移位立即数 ==========================
+;; opcode = 0010011（同属 I-type，但 imm 拆为 funct7 + shamt）
+;; 格式：funct7 | shamt[4:0] | rs1 | funct3 | rd | opcode
+
+slli  rd, rs1, shamt    逻辑左移立即数
+    rd = rs1 << shamt
+    funct7=0000000, funct3=001
+
+srli  rd, rs1, shamt    逻辑右移立即数
+    rd = rs1 >> shamt    高位补 0
+    funct7=0000000, funct3=101
+
+srai  rd, rs1, shamt    算术右移立即数
+    rd = signed(rs1) >>> shamt    高位补符号位
+    funct7=0100000, funct3=101
+
+
+;; ========================== B-type 条件分支 ==================================
+;; opcode = 1100011
+;; 格式：imm[12|10:5] | rs2 | rs1 | funct3 | imm[4:1|11] | opcode
+;; 注意：偏移量为 13 位有符号立即数，且最低位恒为 0（半字对齐）
+
+beq   rs1, rs2, offset    等于分支
+    if (rs1 == rs2) PC = PC + offset
+    funct3=000
+
+bne   rs1, rs2, offset    不等于分支
+    if (rs1 != rs2) PC = PC + offset
+    funct3=001
+
+blt   rs1, rs2, offset    有符号小于分支
+    if (signed(rs1) < signed(rs2)) PC = PC + offset
+    funct3=100
+
+bge   rs1, rs2, offset    有符号大于等于分支
+    if (signed(rs1) >= signed(rs2)) PC = PC + offset
+    funct3=101
+
+bltu  rs1, rs2, offset    无符号小于分支
+    if (unsigned(rs1) < unsigned(rs2)) PC = PC + offset
+    funct3=110
+
+bgeu  rs1, rs2, offset    无符号大于等于分支
+    if (unsigned(rs1) >= unsigned(rs2)) PC = PC + offset
+    funct3=111
