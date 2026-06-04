@@ -50,11 +50,11 @@ module decode (
     // 立即数拆解
     // --------------------------------------------------
 
-    assign imm_I = {{20{instr[31]}}, instr[31:20]};
+    assign imm_I = {{20{instr[31]}}, instr[31:20]};//I类
 
-    assign shamt = instr[24:20];
+    assign shamt = instr[24:20];//I类
 
-    assign imm_branch = {{19{instr[31]}}, instr[31], instr[7], instr[30:25], instr[11:8], 1'd0};
+    assign imm_branch = {{19{instr[31]}}, instr[31], instr[7], instr[30:25], instr[11:8], 1'd0};//branch类立即数
 
     // --------------------------------------------------
     // 控制译码实例化
