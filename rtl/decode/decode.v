@@ -28,6 +28,7 @@ module decode (
     wire [31:0] imm_I;
     wire [ 4:0] shamt;
     wire [ 4:0] op2_sel;
+    wire [32:0] imm_branch;
 
     // --------------------------------------------------
     // 字段提取（纯组合逻辑）

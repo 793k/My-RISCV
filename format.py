@@ -713,6 +713,30 @@ def post_process(filepath):
             merged.append(line)
             i += 1
 
+    # 清理 wire/reg/logic 和紧跟的 assign 之间的空行
+    cleaned = []
+    i = 0
+    while i < len(merged):
+        line = merged[i]
+        stripped = line.strip()
+        if re.match(r"^\s*(reg|wire|logic)\b", stripped):
+            cleaned.append(line)
+            j = i + 1
+            blanks = []
+            while j < len(merged) and merged[j].strip() == "":
+                blanks.append(merged[j])
+                j += 1
+            if j < len(merged) and re.match(r"^\s*assign\b", merged[j].strip()):
+                i = j
+                continue
+            else:
+                cleaned.extend(blanks)
+                i = j
+                continue
+        cleaned.append(line)
+        i += 1
+    merged = cleaned
+
     # 第二步：按规则插入空行
     result = []
     prev_stripped = ""
@@ -752,8 +776,10 @@ def post_process(filepath):
 
         # 规则4: always / assign / initial 前加空行
         if re.match(r"^\s*(always|assign|initial)\b", stripped):
-            if result and result[-1].strip() != "":
-                result.append("\n")
+            # wire/reg/logic 与紧跟的 assign 配对时，不插入空行
+            if not re.match(r"^\s*(reg|wire|logic)\b", prev_stripped):
+                if result and result[-1].strip() != "":
+                    result.append("\n")
 
         # 规则5: endmodule 前加空行
         if stripped == "endmodule":

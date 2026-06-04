@@ -8,7 +8,7 @@ module rom #(
     reg [31:0] rom_mem[0:4095];
 
     initial begin
-        $readmemh("D:/BaiduSyncdisk/cpu/test_data/addi.txt", rom_mem);
+        $readmemh("D:/BaiduSyncdisk/cpu/test_data/test.txt", rom_mem);
     end
 
     always @(*) begin

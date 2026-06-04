@@ -39,6 +39,7 @@ module CPU (
 
     decode u_decode (
         .instr    (instr),
+        .pc_count (pc_addr),
         .rd_addr  (rd_addr),
         .instr_sel(instr_sel),
         .rs1_addr (rs1_addr),
