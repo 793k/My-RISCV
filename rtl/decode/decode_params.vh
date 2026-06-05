@@ -12,14 +12,14 @@
 `define opcode_J_jal    7'b1101111
 `define opcode_J_jalr   7'b1100111
 
-`define op2_sel_defaut  5'd0
-`define op2_sel_I       5'd1
-`define op2_sel_I_shamt 5'd2
-`define op2_sel_R       5'd3
-`define op2_sel_branch  5'd4
-`define op2_sel_U       5'd5
-`define op2_sel_J_jar   5'd6
-`define op2_sel_J_jalr  5'd7
+`define op_sel_defaut  5'd0
+`define op_sel_I       5'd1
+`define op_sel_I_shamt 5'd2
+`define op_sel_R       5'd3
+`define op_sel_branch  5'd4
+`define op_sel_U       5'd5
+`define op_sel_J_jal   5'd6
+`define op_sel_J_jalr  5'd7
 // --------------------------------------------------
 // funct3 常量 - I-type
 // --------------------------------------------------

@@ -27,11 +27,11 @@ module decode (
     wire [ 6:0] funct7;
     wire [31:0] imm_I;
     wire [ 4:0] shamt;
-    wire [ 4:0] op2_sel;
-    wire [32:0] imm_branch;
-    wire [32:0] imm_U;
-    wire [32:0] imm_jal;
-    wire [32:0] imm_jalr;
+    wire [ 4:0] op_sel;
+    wire [31:0] imm_branch;
+    wire [31:0] imm_U;
+    wire [31:0] imm_jal;
+    wire [31:0] imm_jalr;
 
     // --------------------------------------------------
     // 字段提取（纯组合逻辑）
@@ -63,9 +63,9 @@ module decode (
 
     assign imm_U = {instr[31:12], 12'd0};  //U类立即数
 
-    assign imm_jal = {
-        {12{instr[31]}}, instr[31], instr[21:12], instr[22], instr[30:23], 1'd0
-    };  //jal立即数
+    assign imm_jal = {{12{instr[31]}}, instr[31], instr[19:12], instr[20], instr[30:21], 1'b0};
+
+    assign imm_jalr = {{20{instr[31]}}, instr[31:20]};  //jalr立即数
 
     // --------------------------------------------------
     // 控制译码实例化
@@ -76,7 +76,7 @@ module decode (
         .funct3   (funct3),
         .funct7   (funct7),
         .instr_sel(instr_sel),
-        .op2_sel  (op2_sel)
+        .op_sel  (op_sel)
     );
 
     // --------------------------------------------------
@@ -85,19 +85,23 @@ module decode (
 
     always @(*) begin
         op1 = rs1_data;
-        case (op2_sel)
-            `op2_sel_defaut : op2 = rs2_data;
-            `op2_sel_I      : op2 = imm_I;
-            `op2_sel_I_shamt: op2 = {27'b0, shamt};
-            `op2_sel_R      : op2 = rs2_data;
-            `op2_sel_branch : op2 = rs2_data;
-            `op2_sel_U      : op2 = imm_U; //lui,auipc
-            `op2_sel_J_jar  : op2 = imm_jal;
-            default         : op2 = imm_I;
+        case (op_sel)
+            `op_sel_defaut : op2 = rs2_data;
+            `op_sel_I      : op2 = imm_I;
+            `op_sel_I_shamt: op2 = {27'b0, shamt};
+            `op_sel_R      : op2 = rs2_data;
+            `op_sel_branch : op2 = rs2_data;
+            `op_sel_U      : op2 = imm_U; //lui,auipc
+            default        : op2 = 32'd0;
         endcase
 
         jump_op1 = pc_count;
-        jump_op2 = imm_branch;
+        case (op_sel)  //跳转指令
+            `op_sel_J_jal : jump_op2 = imm_jal;
+            `op_sel_J_jalr: jump_op2 = imm_jalr;
+            default       : jump_op2 = imm_branch;
+        endcase
+
     end
 
 endmodule

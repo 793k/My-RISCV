@@ -108,17 +108,29 @@ module alu (
                     jump_en = 1'd1;
                 end
             end
-            `instr_sel_lui  : begin
-                rd_data = op2;
-            end
-            `instr_sel_auipc: begin
-                rd_data = op2 + jump_op1;
-            end
+            `instr_sel_lui  :
+                begin
+                    rd_data = op2;
+                    wr_en = 1'd1;
+                end
+            `instr_sel_auipc:
+                begin
+                    rd_data = op2 + jump_op1;
+                    wr_en = 1'd1;
+                end
             `instr_sel_jal  :
                 begin
                     rd_data = jump_op1 + 4;
+                    wr_en = 1'd1;
                     jump_en = 1'd1;
-                    jump_addr = jump_op1+op2;
+                    jump_addr = jump_op1 + jump_op2;
+                end
+            `instr_sel_jalr :
+                begin
+                    rd_data = jump_op1 + 4;
+                    wr_en = 1'd1;
+                    jump_en = 1'd1;
+                    jump_addr = (op1 + jump_op2) & ~32'd1;  //reg[rs1]+imm
                 end
             default         : ;
         endcase
