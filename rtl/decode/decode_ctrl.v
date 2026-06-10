@@ -1,5 +1,9 @@
+// ============================================================
 // 控制译码子模块
-// 输入 opcode/funct3/funct7，输出 instr_sel 和 op 选择信号
+// ============================================================
+// 功能：输入 opcode / funct3 / funct7，输出 instr_sel 和 op_sel
+//       用于标识具体指令及对应的操作数类型
+// ============================================================
 
 module decode_ctrl (
     input  wire [6:0] opcode,
@@ -13,11 +17,15 @@ module decode_ctrl (
 
     always @(*) begin
 
-        // instr_sel = 6'd0;
-        op_sel = `op_sel_defaut;
+        instr_sel = 6'd0;
+        op_sel    = `op_sel_defaut;
 
         case (opcode)
-            `opcode_I          : begin
+
+            // --------------------------------------------------
+            // I-type
+            // --------------------------------------------------
+            `opcode_I: begin
                 op_sel = `op_sel_I;
                 case (funct3)
                     `funct3_I_addi     : instr_sel = `instr_sel_addi;
@@ -26,32 +34,32 @@ module decode_ctrl (
                     `funct3_I_xori     : instr_sel = `instr_sel_xori;
                     `funct3_I_ori      : instr_sel = `instr_sel_ori;
                     `funct3_I_andi     : instr_sel = `instr_sel_andi;
-                    `funct3_I_slli     :
-                        begin
-                            instr_sel = `instr_sel_slli;
-                            op_sel = `op_sel_I_shamt;
-                        end
+                    `funct3_I_slli     : begin
+                        instr_sel = `instr_sel_slli;
+                        op_sel    = `op_sel_I_shamt;
+                    end
                     `funct3_I_srli_srai: begin
-                        if (funct7 == 7'b0000000) begin
+                        if (funct7 == 7'b0000000)
                             instr_sel = `instr_sel_srli;
-                        end else begin
+                        else
                             instr_sel = `instr_sel_srai;
-                        end
                         op_sel = `op_sel_I_shamt;
                     end
-                    default            : ;
+                    default: ;
                 endcase
             end
 
+            // --------------------------------------------------
+            // R-type
+            // --------------------------------------------------
             `opcode_R: begin
                 op_sel = `op_sel_R;
                 case (funct3)
                     `funct3_R_add_sub: begin
-                        if (funct7 == 7'b0000000) begin
+                        if (funct7 == 7'b0000000)
                             instr_sel = `instr_sel_add;
-                        end else begin
+                        else
                             instr_sel = `instr_sel_sub;
-                        end
                     end
                     `funct3_R_sll    : instr_sel = `instr_sel_sll;
                     `funct3_R_slt    : instr_sel = `instr_sel_slt;
@@ -60,16 +68,18 @@ module decode_ctrl (
                     `funct3_R_or     : instr_sel = `instr_sel_or;
                     `funct3_R_and    : instr_sel = `instr_sel_and;
                     `funct3_R_srl_sra: begin
-                        if (funct7 == 7'b0000000) begin
+                        if (funct7 == 7'b0000000)
                             instr_sel = `instr_sel_srl;
-                        end else begin
+                        else
                             instr_sel = `instr_sel_sra;
-                        end
                     end
-                    default          : ;
+                    default: ;
                 endcase
             end
 
+            // --------------------------------------------------
+            // B-type (Branch)
+            // --------------------------------------------------
             `opcode_BRANCH: begin
                 op_sel = `op_sel_branch;
                 case (funct3)
@@ -83,28 +93,37 @@ module decode_ctrl (
                 endcase
             end
 
+            // --------------------------------------------------
+            // U-type
+            // --------------------------------------------------
             `opcode_U_lui: begin
-                op_sel = `op_sel_U;
+                op_sel    = `op_sel_U;
                 instr_sel = `instr_sel_lui;
             end
 
             `opcode_U_auipc: begin
-                op_sel = `op_sel_U;
+                op_sel    = `op_sel_U;
                 instr_sel = `instr_sel_auipc;
             end
 
+            // --------------------------------------------------
+            // J-type (jal)
+            // --------------------------------------------------
             `opcode_J_jal: begin
-                op_sel = `op_sel_J_jal;
+                op_sel    = `op_sel_J_jal;
                 instr_sel = `instr_sel_jal;
             end
 
+            // --------------------------------------------------
+            // I-type (jalr)
+            // --------------------------------------------------
             `opcode_J_jalr: begin
-                op_sel = `op_sel_J_jalr;
+                op_sel    = `op_sel_J_jalr;
                 instr_sel = `instr_sel_jalr;
             end
+
             default: ;
         endcase
     end
 
 endmodule
-

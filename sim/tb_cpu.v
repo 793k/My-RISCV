@@ -52,6 +52,15 @@ module tb_cpu;
     wire [31:0] sim_rd_data;
     assign sim_rd_data = u_cpu.rd_data;
 
+    // ALU 子模块输出（假设 alu 内部有这些信号名，按实际修改）
+    wire [31:0] sim_alu_rd_data;
+    assign sim_alu_rd_data = u_cpu.u_alu.rd_data;
+    wire [31:0] sim_alu_jump_addr;
+    assign sim_alu_jump_addr = u_cpu.u_alu.jump_addr;
+    wire sim_alu_jump_en;
+    assign sim_alu_jump_en = u_cpu.u_alu.jump_en;
+    wire sim_alu_wr_en;
+    assign sim_alu_wr_en = u_cpu.u_alu.wr_en;
     // ==================================================
     // 4. 引出子模块内部关键信号（二级层次）
     // ==================================================
@@ -138,15 +147,7 @@ module tb_cpu;
 
     assign sim_t6 = sim_regs[31];  // x31
 
-    // ALU 子模块输出（假设 alu 内部有这些信号名，按实际修改）
-    wire [31:0] sim_alu_rd_data;
-    assign sim_alu_rd_data = u_cpu.u_alu.rd_data;
-    wire [31:0] sim_alu_jump_addr;
-    assign sim_alu_jump_addr = u_cpu.u_alu.jump_addr;
-    wire sim_alu_jump_en;
-    assign sim_alu_jump_en = u_cpu.u_alu.jump_en;
-    wire sim_alu_wr_en;
-    assign sim_alu_wr_en = u_cpu.u_alu.wr_en;
+
 
     // ==================================================
     // 5. 时钟生成（100MHz，10ns 周期）

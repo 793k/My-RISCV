@@ -1,28 +1,38 @@
+// ============================================================
 // 解码模块参数定义
-// 32bit架构，写法非标，学习为主
+// ============================================================
+// 说明：32bit 架构，RISC-V RV32I 指令集相关常量定义
+// ============================================================
 
-// --------------------------------------------------
-// 操作码常量
-// --------------------------------------------------
-`define opcode_I        7'b0010011
-`define opcode_R        7'b0110011
-`define opcode_BRANCH   7'b1100011
-`define opcode_U_lui    7'b0110111
-`define opcode_U_auipc  7'b0010111
-`define opcode_J_jal    7'b1101111
-`define opcode_J_jalr   7'b1100111
+// ============================================================
+// 操作码 (opcode)
+// ============================================================
 
-`define op_sel_defaut  5'd0
-`define op_sel_I       5'd1
-`define op_sel_I_shamt 5'd2
-`define op_sel_R       5'd3
-`define op_sel_branch  5'd4
-`define op_sel_U       5'd5
-`define op_sel_J_jal   5'd6
-`define op_sel_J_jalr  5'd7
-// --------------------------------------------------
+`define opcode_I        7'b0010011   // I-type ALU
+`define opcode_R        7'b0110011   // R-type ALU
+`define opcode_BRANCH   7'b1100011   // B-type Branch
+`define opcode_U_lui    7'b0110111   // U-type LUI
+`define opcode_U_auipc  7'b0010111   // U-type AUIPC
+`define opcode_J_jal    7'b1101111   // J-type JAL
+`define opcode_J_jalr   7'b1100111   // I-type JALR
+
+// ============================================================
+// 操作类型选择 (op_sel)
+// ============================================================
+
+`define op_sel_defaut  5'd0          // 默认值
+`define op_sel_I       5'd1          // I-type (imm_I)
+`define op_sel_I_shamt 5'd2          // I-type shift (imm_shamt)
+`define op_sel_R       5'd3          // R-type (rs2)
+`define op_sel_branch  5'd4          // B-type (rs2)
+`define op_sel_U       5'd5          // U-type (imm_U)
+`define op_sel_J_jal   5'd6          // J-type JAL (imm_jal)
+`define op_sel_J_jalr  5'd7          // I-type JALR (imm_jalr)
+
+// ============================================================
 // funct3 常量 - I-type
-// --------------------------------------------------
+// ============================================================
+
 `define funct3_I_addi      3'b000
 `define funct3_I_slit      3'b010
 `define funct3_I_slitu     3'b011
@@ -32,9 +42,10 @@
 `define funct3_I_slli      3'b001
 `define funct3_I_srli_srai 3'b101
 
-// --------------------------------------------------
+// ============================================================
 // funct3 常量 - R-type
-// --------------------------------------------------
+// ============================================================
+
 `define funct3_R_add_sub 3'b000
 `define funct3_R_sll     3'b001
 `define funct3_R_slt     3'b010
@@ -44,9 +55,10 @@
 `define funct3_R_and     3'b111
 `define funct3_R_srl_sra 3'b101
 
-// --------------------------------------------------
-// funct3 常量 - Bch-type
-// --------------------------------------------------
+// ============================================================
+// funct3 常量 - B-type
+// ============================================================
+
 `define funct3_BCH_beq  3'b000
 `define funct3_BCH_bne  3'b001
 `define funct3_BCH_blt  3'b100
@@ -54,9 +66,10 @@
 `define funct3_BCH_bltu 3'b110
 `define funct3_BCH_bgeu 3'b111
 
-// --------------------------------------------------
-// instr_sel 常量 - I-type
-// --------------------------------------------------
+// ============================================================
+// instr_sel 常量 - I-type ALU
+// ============================================================
+
 `define instr_sel_addi  6'd0
 `define instr_sel_slit  6'd1
 `define instr_sel_slitu 6'd2
@@ -67,9 +80,10 @@
 `define instr_sel_srli  6'd7
 `define instr_sel_srai  6'd8
 
-// --------------------------------------------------
-// instr_sel 常量 - R-type
-// --------------------------------------------------
+// ============================================================
+// instr_sel 常量 - R-type ALU
+// ============================================================
+
 `define instr_sel_add  6'd9
 `define instr_sel_sub  6'd10
 `define instr_sel_sll  6'd11
@@ -81,9 +95,10 @@
 `define instr_sel_srl  6'd17
 `define instr_sel_sra  6'd18
 
-// --------------------------------------------------
-// instr_sel 常量 - Bch-type
-// --------------------------------------------------
+// ============================================================
+// instr_sel 常量 - B-type Branch
+// ============================================================
+
 `define instr_sel_beq  6'd19
 `define instr_sel_bne  6'd20
 `define instr_sel_blt  6'd21
@@ -91,10 +106,11 @@
 `define instr_sel_bltu 6'd23
 `define instr_sel_bgeu 6'd24
 
-// --------------------------------------------------
-// instr_sel 常量 U-type
-// --------------------------------------------------
-`define instr_sel_lui       6'd25
-`define instr_sel_auipc     6'd26
-`define instr_sel_jal       6'd27
-`define instr_sel_jalr      6'd28
+// ============================================================
+// instr_sel 常量 - U-type / J-type
+// ============================================================
+
+`define instr_sel_lui   6'd25
+`define instr_sel_auipc 6'd26
+`define instr_sel_jal   6'd27
+`define instr_sel_jalr  6'd28
