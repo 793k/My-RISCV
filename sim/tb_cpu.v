@@ -19,48 +19,48 @@ module tb_cpu;
     // ==================================================
     // 3. 引出 CPU 内部全部线网（一级层次）
     // ==================================================
-    wire [31:0] sim_pc_addr;
-    assign sim_pc_addr = u_cpu.pc_addr;
-    wire [31:0] sim_jump_addr;
-    assign sim_jump_addr = u_cpu.jump_addr;
-    wire [31:0] sim_instr;
-    assign sim_instr = u_cpu.instr;
-    wire [4:0] sim_rd_addr;
-    assign sim_rd_addr = u_cpu.rd_addr;
-    wire [5:0] sim_instr_sel;
-    assign sim_instr_sel = u_cpu.instr_sel;
-    wire [4:0] sim_rs1_addr;
-    assign sim_rs1_addr = u_cpu.rs1_addr;
-    wire [4:0] sim_rs2_addr;
-    assign sim_rs2_addr = u_cpu.rs2_addr;
-    wire [31:0] sim_rs1_data;
-    assign sim_rs1_data = u_cpu.rs1_data;
-    wire [31:0] sim_rs2_data;
-    assign sim_rs2_data = u_cpu.rs2_data;
-    wire [31:0] sim_op1;
-    assign sim_op1 = u_cpu.op1;
-    wire [31:0] sim_op2;
-    assign sim_op2 = u_cpu.op2;
-    wire [31:0] sim_jump_op1;
-    assign sim_jump_op1 = u_cpu.jump_op1;
-    wire [31:0] sim_jump_op2;
-    assign sim_jump_op2 = u_cpu.jump_op2;
-    wire sim_wr_en;
-    assign sim_wr_en = u_cpu.wr_en;
-    wire sim_jump_en;
-    assign sim_jump_en = u_cpu.jump_en;
-    wire [31:0] sim_rd_data;
-    assign sim_rd_data = u_cpu.rd_data;
+    wire [31:0] sim_if_pc;
+    assign sim_if_pc = u_cpu.if_pc;
+    wire [31:0] sim_dbg_jump_target;
+    assign sim_dbg_jump_target = u_cpu.dbg_jump_target;
+    wire [31:0] sim_if_instr;
+    assign sim_if_instr = u_cpu.if_instr;
+    wire [4:0] sim_dbg_rd_idx;
+    assign sim_dbg_rd_idx = u_cpu.dbg_rd_idx;
+    wire [5:0] sim_dbg_instr_sel;
+    assign sim_dbg_instr_sel = u_cpu.dbg_instr_sel;
+    wire [4:0] sim_dbg_rs1_idx;
+    assign sim_dbg_rs1_idx = u_cpu.dbg_rs1_idx;
+    wire [4:0] sim_dbg_rs2_idx;
+    assign sim_dbg_rs2_idx = u_cpu.dbg_rs2_idx;
+    wire [31:0] sim_dbg_rs1_val;
+    assign sim_dbg_rs1_val = u_cpu.dbg_rs1_val;
+    wire [31:0] sim_dbg_rs2_val;
+    assign sim_dbg_rs2_val = u_cpu.dbg_rs2_val;
+    wire [31:0] sim_dbg_alu_a;
+    assign sim_dbg_alu_a = u_cpu.dbg_alu_a;
+    wire [31:0] sim_dbg_alu_b;
+    assign sim_dbg_alu_b = u_cpu.dbg_alu_b;
+    wire [31:0] sim_dbg_jump_base;
+    assign sim_dbg_jump_base = u_cpu.dbg_jump_base;
+    wire [31:0] sim_dbg_jump_offs;
+    assign sim_dbg_jump_offs = u_cpu.dbg_jump_offs;
+    wire sim_dbg_reg_wr_en;
+    assign sim_dbg_reg_wr_en = u_cpu.dbg_reg_wr_en;
+    wire sim_dbg_jump_en;
+    assign sim_dbg_jump_en = u_cpu.dbg_jump_en;
+    wire [31:0] sim_dbg_write_val;
+    assign sim_dbg_write_val = u_cpu.dbg_write_val;
 
     // ALU 子模块输出（假设 alu 内部有这些信号名，按实际修改）
-    wire [31:0] sim_alu_rd_data;
-    assign sim_alu_rd_data = u_cpu.u_alu.rd_data;
-    wire [31:0] sim_alu_jump_addr;
-    assign sim_alu_jump_addr = u_cpu.u_alu.jump_addr;
+    wire [31:0] sim_alu_result;
+    assign sim_alu_result = u_cpu.u_alu.result;
+    wire [31:0] sim_alu_jump_target;
+    assign sim_alu_jump_target = u_cpu.u_alu.jump_target;
     wire sim_alu_jump_en;
     assign sim_alu_jump_en = u_cpu.u_alu.jump_en;
-    wire sim_alu_wr_en;
-    assign sim_alu_wr_en = u_cpu.u_alu.wr_en;
+    wire sim_alu_reg_wr_en;
+    assign sim_alu_reg_wr_en = u_cpu.u_alu.reg_wr_en;
     // ==================================================
     // 4. 引出子模块内部关键信号（二级层次）
     // ==================================================
@@ -187,10 +187,10 @@ module tb_cpu;
 
     always @(posedge clk) begin
         if (rst_n) begin
-            $display(
+                $display(
                 "T = %0t | PC = %08X | Instr = %08X | rs1 = %02d(%08X) rs2 = %02d(%08X) | rd = %02d WE = %b WD = %08X | JUMP = %b -> %08X",
-                $time, sim_pc_addr, sim_instr, sim_rs1_addr, sim_rs1_data, sim_rs2_addr,
-                sim_rs2_data, sim_rd_addr, sim_wr_en, sim_rd_data, sim_jump_en, sim_jump_addr);
+                $time, sim_if_pc, sim_if_instr, sim_dbg_rs1_idx, sim_dbg_rs1_val, sim_dbg_rs2_idx,
+                sim_dbg_rs2_val, sim_dbg_rd_idx, sim_dbg_reg_wr_en, sim_dbg_write_val, sim_dbg_jump_en, sim_dbg_jump_target);
         end
     end
 

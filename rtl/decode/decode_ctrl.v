@@ -10,7 +10,7 @@ module decode_ctrl (
     input  wire [2:0] funct3,
     input  wire [6:0] funct7,
     output reg  [5:0] instr_sel,
-    output reg  [4:0] op_sel
+    output reg  [4:0] op_type
 );
 
     `include "decode_params.vh"
@@ -18,7 +18,7 @@ module decode_ctrl (
     always @(*) begin
 
         instr_sel = 6'd0;
-        op_sel    = `op_sel_defaut;
+        op_type   = `op_sel_defaut;
 
         case (opcode)
 
@@ -26,7 +26,7 @@ module decode_ctrl (
             // I-type
             // --------------------------------------------------
             `opcode_I: begin
-                op_sel = `op_sel_I;
+                op_type = `op_sel_I;
                 case (funct3)
                     `funct3_I_addi     : instr_sel = `instr_sel_addi;
                     `funct3_I_slit     : instr_sel = `instr_sel_slit;
@@ -36,14 +36,14 @@ module decode_ctrl (
                     `funct3_I_andi     : instr_sel = `instr_sel_andi;
                     `funct3_I_slli     : begin
                         instr_sel = `instr_sel_slli;
-                        op_sel    = `op_sel_I_shamt;
+                        op_type   = `op_sel_I_shamt;
                     end
                     `funct3_I_srli_srai: begin
                         if (funct7 == 7'b0000000)
                             instr_sel = `instr_sel_srli;
                         else
                             instr_sel = `instr_sel_srai;
-                        op_sel = `op_sel_I_shamt;
+                        op_type = `op_sel_I_shamt;
                     end
                     default: ;
                 endcase
@@ -53,7 +53,7 @@ module decode_ctrl (
             // R-type
             // --------------------------------------------------
             `opcode_R: begin
-                op_sel = `op_sel_R;
+                op_type = `op_sel_R;
                 case (funct3)
                     `funct3_R_add_sub: begin
                         if (funct7 == 7'b0000000)
@@ -81,7 +81,7 @@ module decode_ctrl (
             // B-type (Branch)
             // --------------------------------------------------
             `opcode_BRANCH: begin
-                op_sel = `op_sel_branch;
+                op_type = `op_sel_branch;
                 case (funct3)
                     `funct3_BCH_beq : instr_sel = `instr_sel_beq;
                     `funct3_BCH_bne : instr_sel = `instr_sel_bne;
@@ -97,12 +97,12 @@ module decode_ctrl (
             // U-type
             // --------------------------------------------------
             `opcode_U_lui: begin
-                op_sel    = `op_sel_U;
+                op_type   = `op_sel_U;
                 instr_sel = `instr_sel_lui;
             end
 
             `opcode_U_auipc: begin
-                op_sel    = `op_sel_U;
+                op_type   = `op_sel_U;
                 instr_sel = `instr_sel_auipc;
             end
 
@@ -110,7 +110,7 @@ module decode_ctrl (
             // J-type (jal)
             // --------------------------------------------------
             `opcode_J_jal: begin
-                op_sel    = `op_sel_J_jal;
+                op_type   = `op_sel_J_jal;
                 instr_sel = `instr_sel_jal;
             end
 
@@ -118,7 +118,7 @@ module decode_ctrl (
             // I-type (jalr)
             // --------------------------------------------------
             `opcode_J_jalr: begin
-                op_sel    = `op_sel_J_jalr;
+                op_type   = `op_sel_J_jalr;
                 instr_sel = `instr_sel_jalr;
             end
 

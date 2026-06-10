@@ -7,23 +7,23 @@
 
 module decode (
     input  wire [31:0] instr,
-    input  wire [31:0] pc_count,
-    output wire [ 4:0] rd_addr,
+    input  wire [31:0] pc,
+    output wire [ 4:0] rd_idx,
     output wire [ 5:0] instr_sel,     // ALU 指令选择
 
-    output wire [ 4:0] rs1_addr,
-    input  wire [31:0] rs1_data,
+    output wire [ 4:0] rs1_idx,
+    input  wire [31:0] rs1_val,
 
-    output wire [ 4:0] rs2_addr,
-    input  wire [31:0] rs2_data,
+    output wire [ 4:0] rs2_idx,
+    input  wire [31:0] rs2_val,
 
-    output reg  [31:0] op1,
-    output reg  [31:0] op2,
+    output reg  [31:0] alu_a,
+    output reg  [31:0] alu_b,
 
-    output reg  [31:0] jump_op1,
-    output reg  [31:0] jump_op2,
+    output reg  [31:0] jump_base,
+    output reg  [31:0] jump_offs,
 
-    output wire [ 4:0] op_sel         // 操作类型选择（用于流水线前递判断）
+    output wire [ 4:0] op_type        // 操作类型选择（用于流水线前递判断）
 );
 
     `include "decode_params.vh"
@@ -46,9 +46,9 @@ module decode (
     // 指令字段提取（纯组合逻辑）
     // ============================================================
 
-    assign rd_addr  = instr[11:7];
-    assign rs1_addr = instr[19:15];
-    assign rs2_addr = instr[24:20];
+    assign rd_idx  = instr[11:7];
+    assign rs1_idx = instr[19:15];
+    assign rs2_idx = instr[24:20];
     assign funct3   = instr[14:12];
     assign funct7   = instr[31:25];
     assign opcode   = instr[6:0];
@@ -82,7 +82,7 @@ module decode (
         .funct3   (funct3),
         .funct7   (funct7),
         .instr_sel(instr_sel),
-        .op_sel   (op_sel)
+        .op_type  (op_type)
     );
 
     // ============================================================
@@ -91,27 +91,27 @@ module decode (
 
     always @(*) begin
         // ALU 操作数 1：固定为 rs1 数据
-        op1 = rs1_data;
+        alu_a = rs1_val;
 
         // ALU 操作数 2：根据指令类型选择
-        case (op_sel)
-            `op_sel_defaut : op2 = rs2_data;
-            `op_sel_I      : op2 = imm_I;
-            `op_sel_I_shamt: op2 = {27'b0, shamt};
-            `op_sel_R      : op2 = rs2_data;
-            `op_sel_branch : op2 = rs2_data;
-            `op_sel_U      : op2 = imm_U;        // lui, auipc
-            default        : op2 = 32'd0;
+        case (op_type)
+            `op_sel_defaut : alu_b = rs2_val;
+            `op_sel_I      : alu_b = imm_I;
+            `op_sel_I_shamt: alu_b = {27'b0, shamt};
+            `op_sel_R      : alu_b = rs2_val;
+            `op_sel_branch : alu_b = rs2_val;
+            `op_sel_U      : alu_b = imm_U;        // lui, auipc
+            default        : alu_b = 32'd0;
         endcase
 
         // 跳转操作数 1：固定为当前 PC
-        jump_op1 = pc_count;
+        jump_base = pc;
 
         // 跳转操作数 2：根据跳转类型选择
-        case (op_sel)
-            `op_sel_J_jal : jump_op2 = imm_jal;
-            `op_sel_J_jalr: jump_op2 = imm_jalr;
-            default       : jump_op2 = imm_branch;
+        case (op_type)
+            `op_sel_J_jal : jump_offs = imm_jal;
+            `op_sel_J_jalr: jump_offs = imm_jalr;
+            default       : jump_offs = imm_branch;
         endcase
     end
 

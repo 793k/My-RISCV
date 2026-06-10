@@ -27,3 +27,5 @@ tools/*.exe
 
 # Misc
 *.zip
+quartus_project/CPU.qws
+quartus_project/CPU.qsf

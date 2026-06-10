@@ -12,17 +12,17 @@ module pc_count #(
     input  wire        clk,
     input  wire        rst_n,
     input  wire        jump_en,
-    input  wire [AW-1:0] jump_addr,
-    output reg  [AW-1:0] out_addr
+    input  wire [AW-1:0] target,
+    output reg  [AW-1:0] pc
 );
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
-            out_addr <= 0;
+            pc <= 0;
         else if (jump_en == 1)
-            out_addr <= jump_addr;
+            pc <= target;
         else
-            out_addr <= out_addr + 32'd4;
+            pc <= pc + 32'd4;
     end
 
 endmodule

@@ -9,12 +9,12 @@ module regfile (
     input  wire        clk,
     input  wire        rst_n,
     input  wire        wr_en,
-    input  wire [ 4:0] wr_addr,
+    input  wire [ 4:0] wr_idx,
     input  wire [31:0] wr_data,
-    input  wire [ 4:0] rs1_addr,
-    input  wire [ 4:0] rs2_addr,
-    output reg  [31:0] rs1_data,
-    output reg  [31:0] rs2_data
+    input  wire [ 4:0] rs1_idx,
+    input  wire [ 4:0] rs2_idx,
+    output reg  [31:0] rs1_val,
+    output reg  [31:0] rs2_val
 );
 
     reg [31:0] regs [0:31];
@@ -26,20 +26,20 @@ module regfile (
 
     always @(*) begin
         // rs1 读端口
-        if (rs1_addr == 5'd0)
-            rs1_data = 32'd0;
-        else if (wr_en && rs1_addr == wr_addr)
-            rs1_data = wr_data;              // 同周期写回旁路
+        if (rs1_idx == 5'd0)
+            rs1_val = 32'd0;
+        else if (wr_en && rs1_idx == wr_idx)
+            rs1_val = wr_data;              // 同周期写回旁路
         else
-            rs1_data = regs[rs1_addr];
+            rs1_val = regs[rs1_idx];
 
         // rs2 读端口
-        if (rs2_addr == 5'd0)
-            rs2_data = 32'd0;
-        else if (wr_en && rs2_addr == wr_addr)
-            rs2_data = wr_data;              // 同周期写回旁路
+        if (rs2_idx == 5'd0)
+            rs2_val = 32'd0;
+        else if (wr_en && rs2_idx == wr_idx)
+            rs2_val = wr_data;              // 同周期写回旁路
         else
-            rs2_data = regs[rs2_addr];
+            rs2_val = regs[rs2_idx];
     end
 
     // --------------------------------------------------
@@ -50,8 +50,8 @@ module regfile (
         if (!rst_n) begin
             for (i = 0; i < 32; i = i + 1)
                 regs[i] <= 32'd0;            // 复位清零
-        end else if (wr_en && wr_addr != 5'd0) begin
-            regs[wr_addr] <= wr_data;        // x0 不可写
+        end else if (wr_en && wr_idx != 5'd0) begin
+            regs[wr_idx] <= wr_data;        // x0 不可写
         end
     end
 

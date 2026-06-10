@@ -62,6 +62,10 @@ set_global_assignment -name EDA_TEST_BENCH_NAME tb_cpu -section_id eda_simulatio
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id tb_cpu
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb_cpu -section_id tb_cpu
 set_global_assignment -name EDA_TEST_BENCH_FILE ../sim/tb_cpu.v -section_id tb_cpu
+set_global_assignment -name VERILOG_FILE ../rtl/pipe/pipe_mem_wr.v
+set_global_assignment -name VERILOG_FILE ../rtl/pipe/pipe_ex_mem.v
+set_global_assignment -name VERILOG_FILE ../rtl/pipe/pipe_id_ex.v
+set_global_assignment -name VERILOG_FILE ../rtl/pipe/pipe_if_id.v
 set_global_assignment -name VERILOG_FILE ../rtl/ALU/alu.v
 set_global_assignment -name VERILOG_FILE ../rtl/regfile/regfile.v
 set_global_assignment -name VERILOG_FILE ../rtl/decode/decode_ctrl.v
