@@ -140,12 +140,17 @@ module CPU (
         .pc       (if_pc)
     );
 
-    rom #(
-        .AW(32)
-    ) u_rom (
-        .addr (if_pc),
-        .instr(if_instr)
+    rom_32x256 u_rom (
+        .address(if_pc[9:2]),
+        .clock  (~clk),
+        .q      (if_instr)
     );
+    // rom #(
+    //     .AW(32)
+    // ) u_rom (
+    //     .addr (if_pc),
+    //     .instr(if_instr)
+    // );
 
     // ============================================================
     // 2. IF/ID 流水线寄存器（取指 -> 译码）
