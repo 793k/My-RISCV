@@ -122,6 +122,28 @@ module decode_ctrl (
                 instr_sel = `instr_sel_jalr;
             end
 
+            `opcode_S: begin
+                op_type   = `op_sel_S;
+                case (funct3)
+                    `funct3_Store_sb : instr_sel = `instr_sel_sb;
+                    `funct3_Store_sh : instr_sel = `instr_sel_sh;
+                    `funct3_Store_sw : instr_sel = `instr_sel_sw;
+                    default         : ;
+                endcase
+            end
+
+
+            `opcode_L: begin
+                op_type   = `op_sel_L;
+                 case (funct3)
+                    `funct3_Load_lb  : instr_sel = `instr_sel_lb;
+                    `funct3_Load_lh  : instr_sel = `instr_sel_lh;
+                    `funct3_Load_lw  : instr_sel = `instr_sel_lw;
+                    `funct3_Load_lbu : instr_sel = `instr_sel_lbu;
+                    `funct3_Load_lhu : instr_sel = `instr_sel_lhu;
+                    default         : ;
+                endcase
+            end
             default: ;
         endcase
     end

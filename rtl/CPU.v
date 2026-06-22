@@ -2,8 +2,8 @@ module CPU (
     input  wire clk, // 系统时钟
     input  wire rst_n, // 低电平复位信号
     output wire [31:0] o_pc, // 当前 PC
-    output wire [31:0] o_instr, // 当前指令
-    output wire [31:0] o_alu_result // ALU 结果
+    output wire [5:0] o_instr, // 当前指令
+    output wire [31:0] o_reg_rd_val // ALU 结果
 );
 
     // ============================================================
@@ -77,28 +77,35 @@ module CPU (
 
     wire [31:0] ex_alu_a_fwd;  // 数据前递后的 ALU 操作数 A
     wire [31:0] ex_alu_b_fwd;  // 数据前递后的 ALU 操作数 B
-    wire [ 5:0] ex_alu_sel;  // EX 阶段 ALU 指令选择
+    wire [ 5:0] ex_instr_sel;  // EX 阶段 ALU 指令选择
 
-    wire [31:0] ex_alu_result;  // ALU 运算结果
+    wire [31:0] ex_reg_rd_val;  // ALU 运算结果
     wire [31:0] ex_jump_target;  // 跳转目标地址
     wire        ex_jump_en;  // 跳转使能
     wire        ex_reg_wr_en;  // 寄存器写使能
 
+    wire        ex_mem_wr_en;
+    wire [31:0] ex_mem_rd_idx;
+    wire [31:0] ex_mem_rd_val;
     // ============================================================
     // EX/MEM 流水线寄存器输出（MEM 阶段输入）
     // ============================================================
-
-    wire [31:0] mem_alu_result;  // MEM 阶段可见的 ALU 结果
+    wire [5:0]  mem_instr_sel;
+    wire [31:0] mem_reg_rd_val;  // MEM 阶段可见的 ALU 结果
+    wire [31:0] mem_mem_rd_val;  // MEM 阶段可见的 ALU 结果
+    wire [31:0] mem_mem_read_rd_val;  // MEM 阶段可见的 ALU 结果
     wire        mem_reg_wr_en;  // MEM 阶段可见的写使能
-    wire [ 4:0] mem_rd_idx;  // MEM 阶段可见的目标寄存器索引
+    wire        mem_mem_wr_en;  // MEM 阶段可见的写使能
+    wire [ 4:0] mem_reg_rd_idx;  // MEM 阶段可见的目标寄存器索引
+    wire [ 31:0]mem_mem_rd_idx;  // MEM 阶段可见的目标寄存器索引
 
     // ============================================================
     // MEM/WB 流水线寄存器输出（WB 阶段输入）
     // ============================================================
 
-    wire [31:0] wb_write_val;  // WB 阶段写入寄存器的值
     wire        wb_reg_wr_en;  // WB 阶段寄存器写使能
-    wire [ 4:0] wb_rd_idx;  // WB 阶段目标寄存器索引
+    wire [ 4:0] wb_reg_rd_idx;  // WB 阶段目标寄存器索引
+    wire [31:0] wb_reg_rd_val;  // WB 阶段写入寄存器的值
 
     // ============================================================
     // 测试接口信号（仅用于仿真调试）
@@ -146,7 +153,7 @@ module CPU (
     );
 
     rom_32x256 u_rom (
-        .address(if_pc[9:2]),
+        .address(if_pc[12:2]),
         .clock  (~clk),
         .q      (if_instr)
     );
@@ -196,8 +203,8 @@ module CPU (
         .clk    (clk),
         .rst_n  (rst_n),
         .wr_en  (wb_reg_wr_en),
-        .wr_idx (wb_rd_idx),
-        .wr_data(wb_write_val),
+        .wr_idx (wb_reg_rd_idx),
+        .wr_data(wb_reg_rd_val),
         .rs1_idx(id_rs1_idx),
         .rs2_idx(id_rs2_idx),
         .rs1_val(id_rs1_val),
@@ -214,11 +221,11 @@ module CPU (
         .flush(flush),
 
         .mem_reg_wr_en_i (mem_reg_wr_en),
-        .mem_rd_idx_i    (mem_rd_idx),
-        .mem_alu_result_i(mem_alu_result),
+        .mem_reg_rd_idx_i(mem_reg_rd_idx),
+        .mem_reg_rd_val_i(mem_reg_rd_val),
         .wb_reg_wr_en_i  (wb_reg_wr_en),
-        .wb_rd_idx_i     (wb_rd_idx),
-        .wb_write_val_i  (wb_write_val),
+        .wb_rd_idx_i     (wb_reg_rd_idx),
+        .wb_write_val_i  (wb_reg_rd_val),
 
         .alu_a_i    (id_alu_a),
         .alu_b_i    (id_alu_b),
@@ -234,7 +241,7 @@ module CPU (
         .alu_b_fwd_o(ex_alu_b_fwd),
         .jump_base_o(ex_jump_base),
         .jump_offs_o(ex_jump_offs),
-        .alu_sel_o  (ex_alu_sel),
+        .alu_sel_o  (ex_instr_sel),
         .rd_idx_o   (ex_rd_idx),
         .rs1_idx_o  (ex_rs1_idx),
         .rs2_idx_o  (ex_rs2_idx),
@@ -246,15 +253,21 @@ module CPU (
     // ============================================================
 
     alu u_alu (
-        .alu_a      (ex_alu_a_fwd),
-        .alu_b      (ex_alu_b_fwd),
-        .jump_base  (ex_jump_base),
-        .jump_offs  (ex_jump_offs),
-        .instr_sel  (ex_alu_sel),
-        .result     (ex_alu_result),
-        .jump_target(ex_jump_target),
-        .jump_en    (ex_jump_en),
-        .reg_wr_en  (ex_reg_wr_en)
+        .alu_a_i      (ex_alu_a_fwd),
+        .alu_b_i     (ex_alu_b_fwd),
+        .jump_base_i  (ex_jump_base),
+        .jump_offs_i  (ex_jump_offs),
+        .instr_sel_i  (ex_instr_sel),
+
+        .jump_en_o    (ex_jump_en),
+        .jump_target_o(ex_jump_target),//跳转指令不经过mem和wr阶段
+
+        .reg_wr_en_o  (ex_reg_wr_en),
+        .result_o     (ex_reg_rd_val),//用于写入reg寄存器的值
+    
+        .mem_wr_en_o  (ex_mem_wr_en),
+        .mem_rd_idx_o (ex_mem_rd_idx),
+        .mem_rd_val_o (ex_mem_rd_val)//用于mem阶段的值
     );
 
     // ============================================================
@@ -264,12 +277,24 @@ module CPU (
     pipe_ex_mem u_pipe_ex_mem (
         .clk(clk),
         .rst_n(rst_n),
+
+        .reg_rd_idx_i(ex_rd_idx),//不过alu直传
+        .instr_sel_i(ex_instr_sel),//不过alu直传
+
         .reg_wr_en_i(ex_reg_wr_en),
-        .rd_idx_i(ex_rd_idx),  //不仅过alu直传
-        .alu_result_i(ex_alu_result),
+        .reg_rd_val_i(ex_reg_rd_val),
+
+        .mem_wr_en_i(ex_mem_wr_en),
+        .mem_wr_idx_i(ex_mem_rd_idx),
+        .mem_wr_val_i(ex_mem_rd_val),
+        
         .reg_wr_en_o(mem_reg_wr_en),
-        .rd_idx_o(mem_rd_idx),
-        .alu_result_o(mem_alu_result)
+        .reg_rd_idx_o(mem_reg_rd_idx),
+        .reg_rd_val_o(mem_reg_rd_val),
+        .mem_wr_en_o(mem_mem_wr_en),
+        .mem_wr_idx_o(mem_mem_rd_idx),
+        .mem_wr_val_o(mem_mem_rd_val),
+        .instr_sel_o(mem_instr_sel)
     );
 
     // ============================================================
@@ -278,18 +303,29 @@ module CPU (
     // 当前无数据存储器（DM），本阶段为直传
     // 后续添加 LSU 时可在此接入数据 SRAM 读写
     // ============================================================
+    mem_ctrl u_mem_ctrl(
+        .clk(clk),
+        .reg_rd_val_i(mem_reg_rd_val),
+        .mem_wr_en_i(mem_mem_wr_en),
+        .mem_rd_idx_i(mem_mem_rd_idx),
+        .mem_rd_val_i(mem_mem_rd_val),
+        .mem_instr_sel_i(mem_instr_sel),
+        .q_val_o(mem_mem_read_rd_val)
+    );
     // ============================================================
     // 8. MEM/WB 流水线寄存器（访存 -> 写回）
     // ============================================================
     pipe_mem_wr u_pipe_mem_wr (
         .clk(clk),
         .rst_n(rst_n),
+
         .reg_wr_en_i(mem_reg_wr_en),
-        .rd_idx_i(mem_rd_idx),
-        .alu_result_i(mem_alu_result),
+        .reg_rd_idx_i(mem_reg_rd_idx),
+        .reg_rd_val_i(mem_mem_read_rd_val),
+
         .reg_wr_en_o(wb_reg_wr_en),
-        .rd_idx_o(wb_rd_idx),
-        .alu_result_o(wb_write_val)
+        .reg_rd_idx_o(wb_reg_rd_idx),
+        .reg_rd_val_o(wb_reg_rd_val)
     );
 
     // ============================================================
@@ -328,15 +364,15 @@ module CPU (
 
     assign dbg_reg_wr_en = wb_reg_wr_en;
 
-    assign dbg_write_val = wb_write_val;
+    assign dbg_write_val = wb_reg_rd_val;
 
     // 顶层输出信号
 
     assign o_pc = if_pc;
 
-    assign o_instr = id_instr;
+    assign o_instr = id_instr_sel;
 
-    assign o_alu_result = ex_alu_result;
+    assign o_reg_rd_val = ex_reg_rd_val;
 
 endmodule
 

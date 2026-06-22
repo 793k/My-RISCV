@@ -10,7 +10,7 @@ import sys
 import os
 
 
-def txt_to_mif(txt_path, mif_path=None, depth=256, width=32):
+def txt_to_mif(txt_path, mif_path=None, depth=2048, width=32):
     if mif_path is None:
         base, _ = os.path.splitext(txt_path)
         mif_path = base + ".mif"

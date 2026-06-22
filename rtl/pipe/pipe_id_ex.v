@@ -5,8 +5,8 @@ module pipe_id_ex (
 
     // 前递输入（来自 MEM / WB 阶段）
     input  wire        mem_reg_wr_en_i,
-    input  wire [ 4:0] mem_rd_idx_i,
-    input  wire [31:0] mem_alu_result_i,
+    input  wire [ 4:0] mem_reg_rd_idx_i,
+    input  wire [31:0] mem_reg_rd_val_i,
     input  wire        wb_reg_wr_en_i,
     input  wire [ 4:0] wb_rd_idx_i,
     input  wire [31:0] wb_write_val_i,
@@ -86,9 +86,9 @@ module pipe_id_ex (
     // --------------------------------------------------
 
     always @(*) begin
-        if (mem_reg_wr_en_i && (mem_rd_idx_i != 5'd0)
-            && (mem_rd_idx_i == rs1_idx_o)) begin
-            alu_a_fwd_o = mem_alu_result_i;
+        if (mem_reg_wr_en_i && (mem_reg_rd_idx_i != 5'd0)
+            && (mem_reg_rd_idx_i == rs1_idx_o)) begin
+            alu_a_fwd_o = mem_reg_rd_val_i;
         end else if (wb_reg_wr_en_i && (wb_rd_idx_i != 5'd0)
             && (wb_rd_idx_i == rs1_idx_o)) begin
             alu_a_fwd_o = wb_write_val_i;
@@ -102,11 +102,11 @@ module pipe_id_ex (
     // --------------------------------------------------
 
     always @(*) begin
-        if ((op_type_o == `op_sel_R || op_type_o == `op_sel_branch)
-            && mem_reg_wr_en_i && (mem_rd_idx_i != 5'd0)
-            && (mem_rd_idx_i == rs2_idx_o)) begin
-            alu_b_fwd_o = mem_alu_result_i;
-        end else if ((op_type_o == `op_sel_R || op_type_o == `op_sel_branch)
+        if ((op_type_o == `op_sel_R || op_type_o == `op_sel_branch ||op_type_o == `op_sel_S)
+            && mem_reg_wr_en_i && (mem_reg_rd_idx_i != 5'd0)
+            && (mem_reg_rd_idx_i == rs2_idx_o)) begin
+            alu_b_fwd_o = mem_reg_rd_val_i;
+        end else if ((op_type_o == `op_sel_R || op_type_o == `op_sel_branch || op_type_o == `op_sel_S)
             && wb_reg_wr_en_i && (wb_rd_idx_i != 5'd0)
             && (wb_rd_idx_i == rs2_idx_o)) begin
             alu_b_fwd_o = wb_write_val_i;

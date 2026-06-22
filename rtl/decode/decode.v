@@ -9,7 +9,7 @@ module decode (
     input  wire [31:0] instr,
     input  wire [31:0] pc,
     output wire [ 4:0] rd_idx,
-    output wire [ 5:0] instr_sel,     // ALU 指令选择
+    output wire [ 5:0] instr_sel, // ALU 指令选择
 
     output wire [ 4:0] rs1_idx,
     input  wire [31:0] rs1_val,
@@ -23,7 +23,7 @@ module decode (
     output reg  [31:0] jump_base,
     output reg  [31:0] jump_offs,
 
-    output wire [ 4:0] op_type        // 操作类型选择（用于流水线前递判断）
+    output wire [4:0] op_type // 操作类型选择（用于流水线前递判断）
 );
 
     `include "decode_params.vh"
@@ -41,17 +41,23 @@ module decode (
     wire [31:0] imm_U;
     wire [31:0] imm_jal;
     wire [31:0] imm_jalr;
-
+    wire [31:0] imm_L;
+    wire [31:0] imm_S;
     // ============================================================
     // 指令字段提取（纯组合逻辑）
     // ============================================================
 
-    assign rd_idx  = instr[11:7];
+    assign rd_idx = instr[11:7];
+
     assign rs1_idx = instr[19:15];
+
     assign rs2_idx = instr[24:20];
-    assign funct3   = instr[14:12];
-    assign funct7   = instr[31:25];
-    assign opcode   = instr[6:0];
+
+    assign funct3 = instr[14:12];
+
+    assign funct7 = instr[31:25];
+
+    assign opcode = instr[6:0];
 
     // ============================================================
     // 立即数扩展
@@ -71,7 +77,11 @@ module decode (
         {11{instr[31]}}, instr[31], instr[19:12], instr[20], instr[30:21], 1'b0
     };  // J-type (jal)
 
-    assign imm_jalr = {{20{instr[31]}}, instr[31:20]};  // I-type (jalr)
+    assign imm_jalr = {{20{instr[31]}}, instr[31:20]};  //jalr
+
+    assign imm_L = {{20{instr[31]}}, instr[31:20]};  // L-type
+
+    assign imm_S = {{20{instr[31]}}, instr[31:25], instr[11:7]};//S-type
 
     // ============================================================
     // 控制译码子模块实例化
@@ -90,18 +100,18 @@ module decode (
     // ============================================================
 
     always @(*) begin
+
         // ALU 操作数 1：固定为 rs1 数据
         alu_a = rs1_val;
 
         // ALU 操作数 2：根据指令类型选择
         case (op_type)
-            `op_sel_defaut : alu_b = rs2_val;
             `op_sel_I      : alu_b = imm_I;
             `op_sel_I_shamt: alu_b = {27'b0, shamt};
             `op_sel_R      : alu_b = rs2_val;
             `op_sel_branch : alu_b = rs2_val;
-            `op_sel_U      : alu_b = imm_U;        // lui, auipc
-            default        : alu_b = 32'd0;
+            `op_sel_U      : alu_b = imm_U; // lui, auipc
+            default        : alu_b = rs2_val;
         endcase
 
         // 跳转操作数 1：固定为当前 PC
@@ -111,8 +121,11 @@ module decode (
         case (op_type)
             `op_sel_J_jal : jump_offs = imm_jal;
             `op_sel_J_jalr: jump_offs = imm_jalr;
+            `op_sel_S     : jump_offs = imm_S;
+            `op_sel_L     : jump_offs = imm_L;
             default       : jump_offs = imm_branch;
         endcase
     end
 
 endmodule
+

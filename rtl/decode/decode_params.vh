@@ -3,7 +3,6 @@
 // ============================================================
 // 说明：32bit 架构，RISC-V RV32I 指令集相关常量定义
 // ============================================================
-
 // ============================================================
 // 操作码 (opcode)
 // ============================================================
@@ -15,7 +14,8 @@
 `define opcode_U_auipc  7'b0010111   // U-type AUIPC
 `define opcode_J_jal    7'b1101111   // J-type JAL
 `define opcode_J_jalr   7'b1100111   // I-type JALR
-
+`define opcode_L        7'b0000011   // J-type Store
+`define opcode_S        7'b0100011   // I-type Load
 // ============================================================
 // 操作类型选择 (op_sel)
 // ============================================================
@@ -28,7 +28,8 @@
 `define op_sel_U       5'd5          // U-type (imm_U)
 `define op_sel_J_jal   5'd6          // J-type JAL (imm_jal)
 `define op_sel_J_jalr  5'd7          // I-type JALR (imm_jalr)
-
+`define op_sel_S       5'd8          // I-type JALR (imm_Store)
+`define op_sel_L       5'd9          // I-type JALR (imm_Load)
 // ============================================================
 // funct3 常量 - I-type
 // ============================================================
@@ -65,6 +66,16 @@
 `define funct3_BCH_bge  3'b101
 `define funct3_BCH_bltu 3'b110
 `define funct3_BCH_bgeu 3'b111
+
+`define funct3_Store_sb  3'b000
+`define funct3_Store_sh  3'b001
+`define funct3_Store_sw  3'b010
+
+`define funct3_Load_lb  3'b000
+`define funct3_Load_lh  3'b001
+`define funct3_Load_lw  3'b010
+`define funct3_Load_lbu 3'b100
+`define funct3_Load_lhu 3'b101
 
 // ============================================================
 // instr_sel 常量 - I-type ALU
@@ -114,3 +125,13 @@
 `define instr_sel_auipc 6'd26
 `define instr_sel_jal   6'd27
 `define instr_sel_jalr  6'd28
+
+`define instr_sel_lb   6'd29
+`define instr_sel_lh   6'd30
+`define instr_sel_lw   6'd31
+`define instr_sel_lbu  6'd32
+`define instr_sel_lhu  6'd33
+
+`define instr_sel_sb   6'd34
+`define instr_sel_sh   6'd35
+`define instr_sel_sw   6'd36
