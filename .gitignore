@@ -27,5 +27,6 @@ tools/*.exe
 
 # Misc
 *.zip
+*.bak
 quartus_project/CPU.qws
-quartus_project/CPU.qsf
+quartus_project/greybox_tmp/
