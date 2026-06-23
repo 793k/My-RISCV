@@ -222,7 +222,7 @@ module CPU (
 
         .mem_reg_wr_en_i (mem_reg_wr_en),
         .mem_reg_rd_idx_i(mem_reg_rd_idx),
-        .mem_reg_rd_val_i(mem_reg_rd_val),
+        .mem_reg_rd_val_i(mem_mem_read_rd_val),
         .wb_reg_wr_en_i  (wb_reg_wr_en),
         .wb_rd_idx_i     (wb_reg_rd_idx),
         .wb_write_val_i  (wb_reg_rd_val),
@@ -290,7 +290,7 @@ module CPU (
         
         .reg_wr_en_o(mem_reg_wr_en),
         .reg_rd_idx_o(mem_reg_rd_idx),
-        .reg_rd_val_o(mem_reg_rd_val),
+        .reg_rd_val_o(mem_reg_rd_val),//这个值仅用于store
         .mem_wr_en_o(mem_mem_wr_en),
         .mem_wr_idx_o(mem_mem_rd_idx),
         .mem_wr_val_o(mem_mem_rd_val),
@@ -319,9 +319,9 @@ module CPU (
         .clk(clk),
         .rst_n(rst_n),
 
-        .reg_wr_en_i(mem_reg_wr_en),
-        .reg_rd_idx_i(mem_reg_rd_idx),
-        .reg_rd_val_i(mem_mem_read_rd_val),
+        .reg_wr_en_i(mem_reg_wr_en),//不过mem
+        .reg_rd_idx_i(mem_reg_rd_idx),//不过mem
+        .reg_rd_val_i(mem_mem_read_rd_val),//load的数据，其他指令不用给
 
         .reg_wr_en_o(wb_reg_wr_en),
         .reg_rd_idx_o(wb_reg_rd_idx),
