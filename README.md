@@ -1,0 +1,3 @@
+本项目为个人兴趣项目，目标是使用Verilog写一个riscv的CPU。
+使用gcc编译c语言通过UART烧录代码并运行，任务清单为目录下的roadmap。
+使用开发板为野火征途pro，使用了ip核做RAM和ROM，有不带ip核的分支用于任意FPGA开发板
