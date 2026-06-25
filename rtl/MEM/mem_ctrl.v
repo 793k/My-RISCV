@@ -31,7 +31,7 @@ module mem_ctrl (
     wire [ 7:0] sel_byte = (offset == 2'd3) ? raw[31:24] :
                            (offset == 2'd2) ? raw[23:16] :
                            (offset == 2'd1) ? raw[15: 8] :
-                                              raw[ 7: 0];
+                                              raw[ 7: 0] ;
 
     wire [15:0] sel_half = offset[1] ? raw[31:16] : raw[15:0];
 

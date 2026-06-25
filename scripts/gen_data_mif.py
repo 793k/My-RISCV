@@ -79,8 +79,8 @@ def generate_mif(data, depth, mif_path, base_addr=0):
     # Filter by base address
     data = {a: v for a, v in data.items() if a >= base_addr}
     if not data:
-        print("ERROR: No data found above base address")
-        sys.exit(1)
+        print("WARNING: No data found above base address, generating zero-filled MIF")
+        data = {base_addr: 0}
 
     addr_min = min(data.keys())
     addr_max = max(data.keys())

@@ -3,7 +3,8 @@ module CPU (
     input  wire rst_n, // 低电平复位信号
     output wire [31:0] o_pc, // 当前 PC
     output wire [5:0] o_instr, // 当前指令
-    output wire [31:0] o_reg_rd_val // ALU 结果
+    output wire [31:0] o_reg_rd_val, // ALU 结果
+    output wire        o_uart_txd // UART TX 输出（仿真观测用）
 );
 
     // ============================================================
@@ -88,16 +89,31 @@ module CPU (
     wire [31:0] ex_mem_rd_idx;
     wire [31:0] ex_mem_rd_val;
     // ============================================================
-    // EX/MEM 流水线寄存器输出（MEM 阶段输入）
+    // EX/MEM 流水线寄存器输出 → 总线信号（MEM 阶段输入）//总线命名规则，bus总线输出，rsp总线读取，cs为片选信号
     // ============================================================
-    wire [5:0]  mem_instr_sel;
-    wire [31:0] mem_reg_rd_val;  // MEM 阶段可见的 ALU 结果
-    wire [31:0] mem_mem_rd_val;  // MEM 阶段可见的 ALU 结果
-    wire [31:0] mem_mem_read_rd_val;  // MEM 阶段可见的 ALU 结果
-    wire        mem_reg_wr_en;  // MEM 阶段可见的写使能
-    wire        mem_mem_wr_en;  // MEM 阶段可见的写使能
-    wire [ 4:0] mem_reg_rd_idx;  // MEM 阶段可见的目标寄存器索引
-    wire [ 31:0]mem_mem_rd_idx;  // MEM 阶段可见的目标寄存器索引
+    // 总线请求信号
+    wire [5:0]  bus_instr_sel;
+    wire [31:0] bus_alu_rdata;
+    wire [31:0] bus_wdata;
+    wire        bus_wen;
+    wire [31:0] bus_addr;
+
+    wire        mem_reg_wr_en;
+    wire [ 4:0] mem_reg_rd_idx;
+
+    // 总线响应信号（各外设读回数据）
+    wire [31:0] rsp_ram;         // Data RAM 读回（含 ALU 透传值）
+    wire [31:0] rsp_rom;         // ROM 读回（rom_bus）
+    wire [31:0] rsp_uart;        // UART 读回
+
+    // 片选信号（addr_decoder 输出 → 各外设使能）
+    wire        cs_ram_we;       // RAM 写使能
+    wire        cs_uart_we;      // UART 写使能
+    wire        cs_uart_re;      // UART 读使能
+
+    // 总线 mux 后数据 → MEM/WB 流水线寄存器
+    wire [31:0] bus_rdata;
+    wire        uart_txd;
 
     // ============================================================
     // MEM/WB 流水线寄存器输出（WB 阶段输入）
@@ -152,10 +168,16 @@ module CPU (
         .pc     (if_pc)
     );
 
-    rom_32x256 u_rom (
+    rom_32x256 u_rom_if (
         .address(if_pc[12:2]),
         .clock  (~clk),
         .q      (if_instr)
+    );
+
+    rom_32x256 u_rom_data (
+        .address(bus_addr[12:2]),
+        .clock  (~clk),
+        .q      (rsp_rom)
     );
 
     // rom #(
@@ -184,31 +206,31 @@ module CPU (
     // ============================================================
 
     decode u_decode (
-        .instr    (id_instr),
-        .pc       (id_pc),
-        .rd_idx   (id_rd_idx),
-        .instr_sel(id_instr_sel),
-        .rs1_idx  (id_rs1_idx),
-        .rs1_val  (id_rs1_val),
-        .rs2_idx  (id_rs2_idx),
-        .rs2_val  (id_rs2_val),
-        .alu_a    (id_alu_a),
-        .alu_b    (id_alu_b),
-        .jump_base(id_jump_base),
-        .jump_offs(id_jump_offs),
-        .op_type  (id_op_type)
+        .instr_i    (id_instr),
+        .pc_i       (id_pc),
+        .rd_idx_o   (id_rd_idx),
+        .instr_sel_o(id_instr_sel),
+        .rs1_idx_o  (id_rs1_idx),
+        .rs1_val_i  (id_rs1_val),
+        .rs2_idx_o  (id_rs2_idx),
+        .rs2_val_i  (id_rs2_val),
+        .alu_a_o    (id_alu_a),
+        .alu_b_o    (id_alu_b),
+        .jump_base_o(id_jump_base),
+        .jump_offs_o(id_jump_offs),
+        .op_type_o  (id_op_type)
     );
 
     regfile u_regfile (
-        .clk    (clk),
-        .rst_n  (rst_n),
-        .wr_en  (wb_reg_wr_en),
-        .wr_idx (wb_reg_rd_idx),
-        .wr_data(wb_reg_rd_val),
-        .rs1_idx(id_rs1_idx),
-        .rs2_idx(id_rs2_idx),
-        .rs1_val(id_rs1_val),
-        .rs2_val(id_rs2_val)
+        .clk_i    (clk),
+        .rst_n_i  (rst_n),
+        .wr_en_i  (wb_reg_wr_en),
+        .wr_idx_i (wb_reg_rd_idx),
+        .wr_data_i(wb_reg_rd_val),
+        .rs1_idx_i(id_rs1_idx),
+        .rs2_idx_i(id_rs2_idx),
+        .rs1_val_o(id_rs1_val),
+        .rs2_val_o(id_rs2_val)
     );
 
     // ============================================================
@@ -222,7 +244,7 @@ module CPU (
 
         .mem_reg_wr_en_i (mem_reg_wr_en),
         .mem_reg_rd_idx_i(mem_reg_rd_idx),
-        .mem_reg_rd_val_i(mem_mem_read_rd_val),
+        .mem_reg_rd_val_i(bus_rdata),//可能从任意外设中获取拿到（uart，ram，rom）
         .wb_reg_wr_en_i  (wb_reg_wr_en),
         .wb_rd_idx_i     (wb_reg_rd_idx),
         .wb_write_val_i  (wb_reg_rd_val),
@@ -290,28 +312,66 @@ module CPU (
         
         .reg_wr_en_o(mem_reg_wr_en),
         .reg_rd_idx_o(mem_reg_rd_idx),
-        .reg_rd_val_o(mem_reg_rd_val),//这个值仅用于store
-        .mem_wr_en_o(mem_mem_wr_en),
-        .mem_wr_idx_o(mem_mem_rd_idx),
-        .mem_wr_val_o(mem_mem_rd_val),
-        .instr_sel_o(mem_instr_sel)
+        .reg_rd_val_o(bus_alu_rdata),
+        .mem_wr_en_o(bus_wen),
+        .mem_wr_idx_o(bus_addr),
+        .mem_wr_val_o(bus_wdata),
+        .instr_sel_o(bus_instr_sel)
     );
 
     // ============================================================
-    // 7. MEM Stage（访存阶段）
+    // 7. MEM Stage（访存阶段：地址译码 + 数据 RAM + UART）
     // ============================================================
-    // 当前无数据存储器（DM），本阶段为直传
-    // 后续添加 LSU 时可在此接入数据 SRAM 读写
-    // ============================================================
+
+    addr_decoder u_addr_decoder (
+        .bus_addr_i      (bus_addr),
+        .bus_wen_i       (bus_wen),
+        .bus_instr_sel_i (bus_instr_sel),
+
+        .rsp_ram_i  (rsp_ram),
+        .rsp_rom_i  (rsp_rom),
+        .rsp_uart_i (rsp_uart),
+        .rsp_spi_i  (32'd0),
+        .rsp_i2c_i  (32'd0),
+
+        .cs_ram_we_o (cs_ram_we),//读取标志位，默认输出数据
+        .cs_uart_we_o(cs_uart_we),
+        .cs_uart_re_o(cs_uart_re),
+        .cs_spi_we_o (),
+        .cs_spi_re_o (),
+        .cs_i2c_we_o (),
+        .cs_i2c_re_o (),
+
+        .bus_rdata_o(bus_rdata)
+    );
+
     mem_ctrl u_mem_ctrl(
         .clk(clk),
-        .reg_rd_val_i(mem_reg_rd_val),
-        .mem_wr_en_i(mem_mem_wr_en),
-        .mem_rd_idx_i(mem_mem_rd_idx),
-        .mem_rd_val_i(mem_mem_rd_val),
-        .mem_instr_sel_i(mem_instr_sel),
-        .q_val_o(mem_mem_read_rd_val)
+        .reg_rd_val_i(bus_alu_rdata),
+        .mem_wr_en_i(cs_ram_we),
+        .mem_rd_idx_i(bus_addr),
+        .mem_rd_val_i(bus_wdata),
+        .mem_instr_sel_i(bus_instr_sel),
+        .q_val_o(rsp_ram)
     );
+
+    uart #(
+        .CLK_HZ(50_000_000),
+        .DEFAULT_BAUD(115200)
+    ) u_uart (
+        .clk   (clk),
+        .rst_n (rst_n),
+        .addr  (bus_addr),
+        .wen   (cs_uart_we),
+        .ren   (cs_uart_re),
+        .wdata (bus_wdata),
+        .rdata (rsp_uart),
+        .ready (),
+        .txd   (uart_txd),
+        .rxd   (1'b1),
+        .irq   ()
+    );
+
     // ============================================================
     // 8. MEM/WB 流水线寄存器（访存 -> 写回）
     // ============================================================
@@ -319,9 +379,9 @@ module CPU (
         .clk(clk),
         .rst_n(rst_n),
 
-        .reg_wr_en_i(mem_reg_wr_en),//不过mem
-        .reg_rd_idx_i(mem_reg_rd_idx),//不过mem
-        .reg_rd_val_i(mem_mem_read_rd_val),//load的数据，其他指令不用给
+        .reg_wr_en_i(mem_reg_wr_en),
+        .reg_rd_idx_i(mem_reg_rd_idx),
+        .reg_rd_val_i(bus_rdata),
 
         .reg_wr_en_o(wb_reg_wr_en),
         .reg_rd_idx_o(wb_reg_rd_idx),
@@ -373,6 +433,8 @@ module CPU (
     assign o_instr = id_instr_sel;
 
     assign o_reg_rd_val = ex_reg_rd_val;
+
+    assign o_uart_txd = uart_txd;
 
 endmodule
 

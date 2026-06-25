@@ -30,3 +30,5 @@ tools/*.exe
 *.bak
 quartus_project/CPU.qws
 quartus_project/greybox_tmp/
+environment/
+sw/output/

@@ -143,6 +143,7 @@ module uart #(
     reg [2:0]  tx_bit_cnt;   // 已发送的数据位计数（0~7）
     reg [7:0]  tx_shift;     // 移位寄存器，当前正在发送的字节
     reg        tx_busy;      // 发送忙标志，供 STATUS 寄存器查询
+    reg        rx_overrun_set; // RX overflow 脉冲（RX 状态机 → 寄存器块）
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -151,7 +152,8 @@ module uart #(
             tx_bit_cnt <= 3'd0;
             tx_shift   <= 8'd0;
             tx_busy    <= 1'b0;
-            txd        <= 1'b1;  // UART 空闲时保持高电平
+            txd        <= 1'b1;
+            tx_rd_ptr  <= 0;  // UART 空闲时保持高电平
         end else begin
             case (tx_state)
 
@@ -283,7 +285,10 @@ module uart #(
             rx_clk_cnt <= 16'd0;
             rx_bit_cnt <= 3'd0;
             rx_shift   <= 8'd0;
+            rx_wr_ptr  <= 0;
+            rx_shift   <= 8'd0;
         end else begin
+            rx_overrun_set <= 1'b0;
             case (rx_state)
 
                 // ---------------------------------------------------------
@@ -352,7 +357,7 @@ module uart #(
                             rx_fifo[rx_wr_ptr[$clog2(FIFO_DEPTH)-1:0]] <= rx_shift;
                             rx_wr_ptr <= rx_wr_ptr + 1'b1;
                         end else begin
-                            rx_overrun <= 1'b1;
+                            rx_overrun_set <= 1'b1;
                         end
                     end else begin
                         rx_clk_cnt <= rx_clk_cnt + 1'b1;
@@ -376,70 +381,52 @@ module uart #(
             ctrl       <= 3'b001;                   // 默认使能 UART
             rx_overrun <= 1'b0;
             tx_wr_ptr  <= 0;
-            tx_rd_ptr  <= 0;
-            rx_wr_ptr  <= 0;
             rx_rd_ptr  <= 0;
             rdata      <= 32'd0;
         end else begin
             // ---------------------------------------------------------
             // 7.1 STATUS 寄存器写操作（W1C：写 1 清零）
             // ---------------------------------------------------------
-            // rx_overrun 是 sticky 位，不会自动清 0。
-            // 软件向 STATUS 寄存器的 bit3 写 1 才能清除。
-            if (wen && addr == ADDR_STAT)
+            // rx_overrun：由 RX 状态机置脉冲 rx_overrun_set，本块锁存；
+            // 软件向 STATUS 的 bit[3] 写 1 清零。
+            if (rx_overrun_set)
+                rx_overrun <= 1'b1;
+            else if (wen && addr[3:0] == 4'h4)
                 rx_overrun <= rx_overrun & ~wdata[3];
 
             // ---------------------------------------------------------
             // 7.2 写寄存器
             // ---------------------------------------------------------
             if (wen) begin
-                case (addr)
-                    // DATA：CPU 要发送数据
-                    // 把 wdata 的低 8bit 推入 TX FIFO（如果未满）
-                    ADDR_DATA: begin
+                case (addr[3:0])
+                    4'h0: begin
                         if (!tx_full) begin
                             tx_fifo[tx_wr_ptr[$clog2(FIFO_DEPTH)-1:0]] <= wdata[7:0];
                             tx_wr_ptr <= tx_wr_ptr + 1'b1;
                         end
-                        // 如果满了，写入被静默丢弃（实际应反馈错误，这里简化）
                     end
 
-                    // CTRL：写控制寄存器
-                    ADDR_CTRL: ctrl <= wdata[2:0];
+                    4'h8: ctrl <= wdata[2:0];
 
-                    // BAUD：写波特率分频值
-                    // 例如要 9600 波特率：baud_div = 50_000_000 / 9600 = 5208
-                    ADDR_BAUD: baud_div <= wdata[15:0];
+                    4'hC: baud_div <= wdata[15:0];
                 endcase
             end
 
-            // ---------------------------------------------------------
-            // 7.3 读寄存器
-            // ---------------------------------------------------------
             if (ren) begin
-                case (addr)
-                    // DATA：从 RX FIFO 读取数据
-                    // 读操作会推进 rx_rd_ptr（如果 FIFO 非空）
-                    ADDR_DATA: begin
+                case (addr[3:0])
+                    4'h0: begin
                         rdata <= {24'd0, rx_fifo[rx_rd_ptr[$clog2(FIFO_DEPTH)-1:0]]};
                         if (!rx_empty)
                             rx_rd_ptr <= rx_rd_ptr + 1'b1;
                     end
 
-                    // STATUS：读取当前状态
-                    // bit[0] = tx_full   ：TX FIFO 是否已满
-                    // bit[1] = rx_empty  ：RX FIFO 是否为空
-                    // bit[2] = tx_busy   ：TX 引擎是否正在发送
-                    // bit[3] = rx_overrun：RX 是否发生过溢出
-                    ADDR_STAT: rdata <= {28'd0, rx_overrun, tx_busy, rx_empty, tx_full};
+                    4'h4: rdata <= {28'd0, rx_overrun, tx_busy, rx_empty, tx_full};
 
-                    // CTRL：读取控制寄存器
-                    ADDR_CTRL: rdata <= {29'd0, ctrl};
+                    4'h8: rdata <= {29'd0, ctrl};
 
-                    // BAUD：读取当前波特率分频值
-                    ADDR_BAUD: rdata <= {16'd0, baud_div};
+                    4'hC: rdata <= {16'd0, baud_div};
 
-                    default:   rdata <= 32'd0;
+                    default: rdata <= 32'd0;
                 endcase
             end else begin
                 // 不读时 rdata 保持 0（避免总线冲突，实际看总线协议要求）

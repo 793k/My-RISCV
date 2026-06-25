@@ -70,6 +70,10 @@ set_global_assignment -name VERILOG_FILE ../rtl/decode/decode.v
 set_global_assignment -name VERILOG_FILE ../rtl/decode/decode_ctrl.v
 set_global_assignment -name VERILOG_FILE ../rtl/alu/alu.v
 set_global_assignment -name VERILOG_FILE ../rtl/mem/mem_ctrl.v
+set_global_assignment -name VERILOG_FILE ../rtl/mem/addr_decoder.v
+set_global_assignment -name VERILOG_FILE ../rtl/uart/uart.v
+set_global_assignment -name VERILOG_FILE ../rtl/uart/uart_rx.v
+set_global_assignment -name VERILOG_FILE ../rtl/uart/uart_tx.v
 set_global_assignment -name VERILOG_FILE ../rtl/pipe/pipe_mem_wr.v
 set_global_assignment -name VERILOG_FILE ../rtl/pipe/pipe_ex_mem.v
 set_global_assignment -name VERILOG_FILE ../rtl/pipe/pipe_id_ex.v
