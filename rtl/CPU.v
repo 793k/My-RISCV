@@ -359,17 +359,17 @@ module CPU (
         .CLK_HZ(50_000_000),
         .DEFAULT_BAUD(115200)
     ) u_uart (
-        .clk   (clk),
-        .rst_n (rst_n),
-        .addr  (bus_addr),
-        .wen   (cs_uart_we),
-        .ren   (cs_uart_re),
-        .wdata (bus_wdata),
-        .rdata (rsp_uart),
-        .ready (),
-        .txd   (uart_txd),
-        .rxd   (1'b1),
-        .irq   ()
+        .clk_i   (clk),
+        .rst_n_i (rst_n),
+        .addr_i  (bus_addr),
+        .wen_i   (cs_uart_we),
+        .ren_i   (cs_uart_re),
+        .wdata_i (bus_wdata),
+        .rdata_o (rsp_uart),
+        .ready_o (),
+        .txd_o   (uart_txd),
+        .rxd_i   (1'b1),
+        .irq_o   ()
     );
 
     // ============================================================
