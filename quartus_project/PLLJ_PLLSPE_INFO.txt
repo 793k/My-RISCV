@@ -1,0 +1,5 @@
+PLL_Name	pll_48m:u_pll|altpll:altpll_component|pll_48m_altpll:auto_generated|pll1
+PLLJITTER	NA
+PLLSPEmax	84
+PLLSPEmin	-53
+

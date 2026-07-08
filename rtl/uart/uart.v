@@ -3,8 +3,8 @@
 // STATUS: bit[0]=tx_full [1]=rx_empty [2]=tx_busy [3]=rx_overrun
 // CTRL:   bit[0]=en [1]=tx_ie [2]=rx_ie
 module uart #(
-    parameter CLK_HZ       = 50_000_000,
-    parameter DEFAULT_BAUD = 115_200,
+    parameter CLK_HZ       = 50000000,
+    parameter DEFAULT_BAUD = 115200,
     parameter FIFO_DEPTH   = 8
 )(
     input  wire        clk_i,
@@ -17,10 +17,13 @@ module uart #(
     output wire        ready_o,
     output reg         txd_o,
     input  wire        rxd_i,
-    output wire        irq_o
+    output wire        irq_o,
+    output wire [15:0] dbg_baud_div
 );
 
     localparam DATA = 4'h0, STAT = 4'h4, CTRL = 4'h8, BAUD = 4'hC;
+
+    localparam BAUD_DIV_DEFAULT = CLK_HZ / DEFAULT_BAUD;
 
     reg [15:0] baud_div;
     reg [2:0]  ctrl;
@@ -167,7 +170,7 @@ module uart #(
     // ── 寄存器接口 ──
     always @(posedge clk_i or negedge rst_n_i) begin
         if (!rst_n_i) begin
-            baud_div   <= CLK_HZ / DEFAULT_BAUD;
+            baud_div   <= BAUD_DIV_DEFAULT;
             ctrl       <= 3'b001;
             rx_overrun <= 1'b0;
             tx_wr_ptr  <= 0;
@@ -207,5 +210,6 @@ module uart #(
 
     assign ready_o = 1'b1;
     assign irq_o   = (tx_empty && !tx_busy && tx_ie) || (!rx_empty && rx_ie);
+    assign dbg_baud_div = baud_div;
 
 endmodule

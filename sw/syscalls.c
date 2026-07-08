@@ -18,11 +18,14 @@
 #define UART_BAUD   (*(UART_BASE + 3))
 
 /*
- * UART 初始化：仿真用最快波特率（baud_div=1），发每位只需 1 个时钟周期
+ * UART 初始化（PLL 旁路调试模式：CLK=6.144 MHz）
+ * baud_div = 6_144_000 / 115200 = 53 （实际波特率 ≈ 115924，误差 0.6%）
+ *
+ * 恢复 PLL 后改回：baud_div = 48_000_000 / 115200 = 416
  */
 void uart_init(void) {
-    UART_BAUD = 1;     /* 100MHz / 1 = 100M baud，每位 10ns */
-    UART_CTRL = 1;     /* bit0=使能 TX */
+    UART_BAUD = 6144000 / 115200;  // = 53
+    UART_CTRL = 1;                  // bit0=使能 TX
 }
 
 /*

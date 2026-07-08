@@ -4,8 +4,34 @@ module CPU (
     output wire [31:0] o_pc, // 当前 PC
     output wire [5:0] o_instr, // 当前指令
     output wire [31:0] o_reg_rd_val, // ALU 结果
-    output wire        o_uart_txd // UART TX 输出（仿真观测用）
+    output wire        o_uart_txd, // UART TX 输出（仿真观测用）
+    output wire        o_clk_48m,  // PLL 48MHz 输出（调试用）
+    output wire        o_clk_raw   // 晶振直出 6.144MHz（调试用）
 );
+
+    // ============================================================
+    // PLL 时钟生成：6.144 MHz -> 48 MHz
+    // ============================================================
+    // TODO: PLL 需要 feed 到专用时钟输入引脚 (CLK[0..15])，
+    //       当前 PIN_N26 可能不是专用时钟脚，PLL 无法锁定。
+    //       临时旁路 PLL，直接用 6.144 MHz 跑系统验证整机逻辑。
+    wire clk_sys;
+    wire pll_locked;
+    wire sys_rst_n;
+    wire [15:0] uart_baud_raw;   // UART baud_div 调试引出
+
+    assign clk_sys     = clk;       // PLL 旁路: 直通晶振
+    assign pll_locked  = 1'b1;      // 旁路锁定信号
+    // assign sys_rst_n   = rst_n & pll_locked;  // 原逻辑
+    assign sys_rst_n   = rst_n;     // 旁路
+
+    /*
+    pll_48m u_pll (
+        .inclk0 (clk),
+        .c0     (clk_sys),
+        .locked (pll_locked)
+    );
+    */
 
     // ============================================================
     // 架构说明：五级流水线 CPU（IF -> ID -> EX -> MEM -> WB）
@@ -161,8 +187,8 @@ module CPU (
     pc_count #(
         .AW(32)
     ) u_pc_count (
-        .clk    (clk),
-        .rst_n  (rst_n),
+        .clk    (clk_sys),
+        .rst_n  (sys_rst_n),
         .jump_en(pc_jump_en),
         .target (pc_jump_addr),
         .pc     (if_pc)
@@ -170,13 +196,13 @@ module CPU (
 
     rom_32x256 u_rom_if (
         .address(if_pc[12:2]),
-        .clock  (~clk),
+        .clock  (~clk_sys),
         .q      (if_instr)
     );
 
     rom_32x256 u_rom_data (
         .address(bus_addr[12:2]),
-        .clock  (~clk),
+        .clock  (~clk_sys),
         .q      (rsp_rom)
     );
 
@@ -191,8 +217,8 @@ module CPU (
     // ============================================================
 
     pipe_if_id u_pipe_if_id (
-        .clk    (clk),
-        .rst_n  (rst_n),
+        .clk    (clk_sys),
+        .rst_n  (sys_rst_n),
         .stall  (stall),
         .flush  (flush),
         .pc_i   (if_pc),
@@ -222,8 +248,8 @@ module CPU (
     );
 
     regfile u_regfile (
-        .clk_i    (clk),
-        .rst_n_i  (rst_n),
+        .clk_i    (clk_sys),
+        .rst_n_i  (sys_rst_n),
         .wr_en_i  (wb_reg_wr_en),
         .wr_idx_i (wb_reg_rd_idx),
         .wr_data_i(wb_reg_rd_val),
@@ -238,8 +264,8 @@ module CPU (
     // ============================================================
 
     pipe_id_ex u_pipe_id_ex (
-        .clk  (clk),
-        .rst_n(rst_n),
+        .clk  (clk_sys),
+        .rst_n(sys_rst_n),
         .flush(flush),
 
         .mem_reg_wr_en_i (mem_reg_wr_en),
@@ -297,8 +323,8 @@ module CPU (
     // ============================================================
 
     pipe_ex_mem u_pipe_ex_mem (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk(clk_sys),
+        .rst_n(sys_rst_n),
 
         .reg_rd_idx_i(ex_rd_idx),//不过alu直传
         .instr_sel_i(ex_instr_sel),//不过alu直传
@@ -346,7 +372,7 @@ module CPU (
     );
 
     mem_ctrl u_mem_ctrl(
-        .clk(clk),
+        .clk(clk_sys),
         .reg_rd_val_i(bus_alu_rdata),
         .mem_wr_en_i(cs_ram_we),
         .mem_rd_idx_i(bus_addr),
@@ -356,11 +382,11 @@ module CPU (
     );
 
     uart #(
-        .CLK_HZ(50_000_000),
+        .CLK_HZ(6144000),
         .DEFAULT_BAUD(115200)
     ) u_uart (
-        .clk_i   (clk),
-        .rst_n_i (rst_n),
+        .clk_i   (clk_sys),
+        .rst_n_i (sys_rst_n),
         .addr_i  (bus_addr),
         .wen_i   (cs_uart_we),
         .ren_i   (cs_uart_re),
@@ -369,15 +395,16 @@ module CPU (
         .ready_o (),
         .txd_o   (uart_txd),
         .rxd_i   (1'b1),
-        .irq_o   ()
+        .irq_o   (),
+        .dbg_baud_div(uart_baud_raw)
     );
 
     // ============================================================
     // 8. MEM/WB 流水线寄存器（访存 -> 写回）
     // ============================================================
     pipe_mem_wr u_pipe_mem_wr (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk(clk_sys),
+        .rst_n(sys_rst_n),
 
         .reg_wr_en_i(mem_reg_wr_en),
         .reg_rd_idx_i(mem_reg_rd_idx),
@@ -432,9 +459,13 @@ module CPU (
 
     assign o_instr = id_instr_sel;
 
-    assign o_reg_rd_val = ex_reg_rd_val;
+    assign o_reg_rd_val = {16'd0, uart_baud_raw};  // DEBUG: 引出 baud_div
 
     assign o_uart_txd = uart_txd;
+
+    assign o_clk_48m = clk_sys;
+
+    assign o_clk_raw = clk;
 
 endmodule
 
