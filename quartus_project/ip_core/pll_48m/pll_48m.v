@@ -39,10 +39,12 @@
 module pll_48m (
 	inclk0,
 	c0,
+	c1,
 	locked);
 
 	input	  inclk0;
 	output	  c0;
+	output	  c1;
 	output	  locked;
 
 	wire [5:0] sub_wire0;
@@ -50,13 +52,15 @@ module pll_48m (
 	wire [0:0] sub_wire1;
 	wire  sub_wire2;
 	wire  sub_wire3 = sub_wire0[0:0];
+	wire  sub_wire4 = sub_wire0[1:1];
 	wire  c0 = sub_wire3;
+	wire  c1 = sub_wire4;
 	wire  locked = sub_wire2;
-	wire  sub_wire4 = inclk0;
-	wire [1:0] sub_wire5 = {sub_wire6, sub_wire4};
+	wire  sub_wire5 = inclk0;
+	wire [1:0] sub_wire7 = {sub_wire6, sub_wire5};
 
 	altpll	altpll_component (
-				.inclk (sub_wire5),
+				.inclk (sub_wire7),
 				.clk (sub_wire0),
 				.locked (sub_wire2),
 				.activeclock (),
@@ -99,13 +103,17 @@ module pll_48m (
 		altpll_component.clk0_duty_cycle = 50,
 		altpll_component.clk0_multiply_by = 125,
 		altpll_component.clk0_phase_shift = "0",
+		altpll_component.clk1_divide_by = 16,
+		altpll_component.clk1_duty_cycle = 50,
+		altpll_component.clk1_multiply_by = 125,
+		altpll_component.clk1_phase_shift = "10417",
 		altpll_component.compensate_clock = "CLK0",
 		altpll_component.inclk0_input_frequency = 162760,
 		altpll_component.intended_device_family = "Cyclone IV GX",
 		altpll_component.lpm_hint = "CBX_MODULE_PREFIX=pll_48m",
 		altpll_component.lpm_type = "altpll",
 		altpll_component.operation_mode = "NORMAL",
-		altpll_component.pll_type = "AUTO",
+		altpll_component.pll_type = "CYCLONEIVGX",
 		altpll_component.self_reset_on_loss_lock = "OFF",
 		altpll_component.width_clock = 5;
 

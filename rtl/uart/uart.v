@@ -3,7 +3,7 @@
 // STATUS: bit[0]=tx_full [1]=rx_empty [2]=tx_busy [3]=rx_overrun
 // CTRL:   bit[0]=en [1]=tx_ie [2]=rx_ie
 module uart #(
-    parameter CLK_HZ       = 50000000,
+    parameter CLK_HZ       = 48000000,
     parameter DEFAULT_BAUD = 115200,
     parameter FIFO_DEPTH   = 8
 )(

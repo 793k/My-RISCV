@@ -12,26 +12,10 @@ module CPU (
     // ============================================================
     // PLL 时钟生成：6.144 MHz -> 48 MHz
     // ============================================================
-    // TODO: PLL 需要 feed 到专用时钟输入引脚 (CLK[0..15])，
-    //       当前 PIN_N26 可能不是专用时钟脚，PLL 无法锁定。
-    //       临时旁路 PLL，直接用 6.144 MHz 跑系统验证整机逻辑。
-    wire clk_sys;
-    wire pll_locked;
-    wire sys_rst_n;
-    wire [15:0] uart_baud_raw;   // UART baud_div 调试引出
-
-    assign clk_sys     = clk;       // PLL 旁路: 直通晶振
-    assign pll_locked  = 1'b1;      // 旁路锁定信号
-    // assign sys_rst_n   = rst_n & pll_locked;  // 原逻辑
-    assign sys_rst_n   = rst_n;     // 旁路
-
-    /*
-    pll_48m u_pll (
-        .inclk0 (clk),
-        .c0     (clk_sys),
-        .locked (pll_locked)
-    );
-    */
+    wire clk_sys;         // 48 MHz 系统时钟 (PLL c0, 0°)
+    wire clk_rom;         // 48 MHz ROM 时钟   (PLL c1, 180°)
+    wire pll_locked;      // PLL 锁定标志
+    wire sys_rst_n;       // 系统复位 = rst_n & pll_locked
 
     // ============================================================
     // 架构说明：五级流水线 CPU（IF -> ID -> EX -> MEM -> WB）
@@ -180,9 +164,18 @@ module CPU (
 
     assign pc_jump_addr = ex_jump_en ? ex_jump_target : if_pc;
 
+    assign sys_rst_n = rst_n & pll_locked;
+
     // ============================================================
     // 1. IF Stage（取指令阶段）
     // ============================================================
+
+    pll_48m u_pll (
+        .inclk0 (clk),
+        .c0     (clk_sys),
+        .c1     (clk_rom),
+        .locked (pll_locked)
+    );
 
     pc_count #(
         .AW(32)
@@ -196,13 +189,13 @@ module CPU (
 
     rom_32x256 u_rom_if (
         .address(if_pc[12:2]),
-        .clock  (~clk_sys),
+        .clock  (clk_rom),
         .q      (if_instr)
     );
 
     rom_32x256 u_rom_data (
         .address(bus_addr[12:2]),
-        .clock  (~clk_sys),
+        .clock  (clk_rom),
         .q      (rsp_rom)
     );
 
@@ -382,7 +375,7 @@ module CPU (
     );
 
     uart #(
-        .CLK_HZ(6144000),
+        .CLK_HZ(48000000),
         .DEFAULT_BAUD(115200)
     ) u_uart (
         .clk_i   (clk_sys),

@@ -13,7 +13,7 @@ static const char msg[] = "Hello from RISC-V!\n";
 int main(void) {
     uart_init();
     _write(1, msg, sizeof(msg) - 1);
-    for(int i = 0; i < 10; i++)
-        _write(1, msg, sizeof(msg) - 1);
+    // for(int i = 0; i < 10; i++)
+    //     _write(1, msg, sizeof(msg) - 1);
     return 0;
 }

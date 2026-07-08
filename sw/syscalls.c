@@ -18,13 +18,10 @@
 #define UART_BAUD   (*(UART_BASE + 3))
 
 /*
- * UART 初始化（PLL 旁路调试模式：CLK=6.144 MHz）
- * baud_div = 6_144_000 / 115200 = 53 （实际波特率 ≈ 115924，误差 0.6%）
- *
- * 恢复 PLL 后改回：baud_div = 48_000_000 / 115200 = 416
+ * UART 初始化（PLL 模式：CLK=48 MHz）
+ * baud_div 使用硬件默认值，由 uart.v 的 localparam BAUD_DIV_DEFAULT 决定
  */
 void uart_init(void) {
-    UART_BAUD = 6144000 / 115200;  // = 53
     UART_CTRL = 1;                  // bit0=使能 TX
 }
 
@@ -35,15 +32,22 @@ void uart_init(void) {
 void _putchar(char c) {
     while (UART_STATUS & 1);  /* 等待 UART TX FIFO 有空位 */
     UART_DATA = (unsigned int)(unsigned char)c;
+    /* 等待当前字符传输完成，避免背靠背写入导致帧错位 */
+    while (UART_STATUS & 4);  /* 等待 tx_busy 清除 */
+}
+
+static void delay_ms(int ms) {
+    for (volatile int i = 0; i < ms * 500; i++);
 }
 
 /*
- * 向 fd 写入 len 个字节（fd 参数当前忽略，全部走 UART 输出）
+ * 向 fd 写入 len 个字节
  */
 void _write(int fd, const char *buf, int len) {
     (void)fd;
     for (int i = 0; i < len; i++) {
         _putchar(buf[i]);
+        delay_ms(1);
     }
 }
 
