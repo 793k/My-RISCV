@@ -17,8 +17,7 @@ module uart #(
     output wire        ready_o,
     output reg         txd_o,
     input  wire        rxd_i,
-    output wire        irq_o,
-    output wire [15:0] dbg_baud_div
+    output wire        irq_o
 );
 
     localparam DATA = 4'h0, STAT = 4'h4, CTRL = 4'h8, BAUD = 4'hC;
@@ -210,6 +209,5 @@ module uart #(
 
     assign ready_o = 1'b1;
     assign irq_o   = (tx_empty && !tx_busy && tx_ie) || (!rx_empty && rx_ie);
-    assign dbg_baud_div = baud_div;
 
 endmodule

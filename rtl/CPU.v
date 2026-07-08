@@ -4,9 +4,7 @@ module CPU (
     output wire [31:0] o_pc, // 当前 PC
     output wire [5:0] o_instr, // 当前指令
     output wire [31:0] o_reg_rd_val, // ALU 结果
-    output wire        o_uart_txd, // UART TX 输出（仿真观测用）
-    output wire        o_clk_48m,  // PLL 48MHz 输出（调试用）
-    output wire        o_clk_raw   // 晶振直出 6.144MHz（调试用）
+    output wire        o_uart_txd // UART TX 输出
 );
 
     // ============================================================
@@ -388,8 +386,7 @@ module CPU (
         .ready_o (),
         .txd_o   (uart_txd),
         .rxd_i   (1'b1),
-        .irq_o   (),
-        .dbg_baud_div(uart_baud_raw)
+        .irq_o   ()
     );
 
     // ============================================================
@@ -452,7 +449,7 @@ module CPU (
 
     assign o_instr = id_instr_sel;
 
-    assign o_reg_rd_val = {16'd0, uart_baud_raw};  // DEBUG: 引出 baud_div
+    assign o_reg_rd_val = ex_reg_rd_val;
 
     assign o_uart_txd = uart_txd;
 
