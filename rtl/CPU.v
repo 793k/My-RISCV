@@ -11,7 +11,7 @@ module CPU (
     // PLL 时钟生成：6.144 MHz -> 48 MHz
     // ============================================================
     wire clk_sys;         // 48 MHz 系统时钟 (PLL c0, 0°)
-    wire clk_rom;         // 48 MHz ROM 时钟   (PLL c1, 180°)
+    wire clk_sys_180;         // 48 MHz ROM 时钟   (PLL c1, 180°)
     wire pll_locked;      // PLL 锁定标志
     wire sys_rst_n;       // 系统复位 = rst_n & pll_locked
 
@@ -171,7 +171,7 @@ module CPU (
     pll_48m u_pll (
         .inclk0 (clk),
         .c0     (clk_sys),
-        .c1     (clk_rom),
+        .c1     (clk_sys_180),
         .locked (pll_locked)
     );
 
@@ -187,13 +187,13 @@ module CPU (
 
     rom_32x256 u_rom_if (
         .address(if_pc[12:2]),
-        .clock  (clk_rom),
+        .clock  (clk_sys_180),
         .q      (if_instr)
     );
 
     rom_32x256 u_rom_data (
         .address(bus_addr[12:2]),
-        .clock  (clk_rom),
+        .clock  (clk_sys_180),
         .q      (rsp_rom)
     );
 
@@ -363,7 +363,7 @@ module CPU (
     );
 
     mem_ctrl u_mem_ctrl(
-        .clk(clk_sys),
+        .clk(clk_sys_180),
         .reg_rd_val_i(bus_alu_rdata),
         .mem_wr_en_i(cs_ram_we),
         .mem_rd_idx_i(bus_addr),
