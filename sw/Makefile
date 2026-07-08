@@ -8,6 +8,8 @@
 #       cd sw && make clean  # 删除所有中间文件
 # ================================================================
 
+SHELL = cmd
+
 # ================================================================
 # 一、RISC-V 工具链路径
 # ================================================================
@@ -19,8 +21,10 @@ CROSS     := $(GCC_ROOT)/bin/riscv32-unknown-elf
 
 CC        = $(CROSS)-gcc       # C/汇编编译器
 OBJCOPY   = $(CROSS)-objcopy   # 段提取、格式转换
-OBJDUMP   = $(CROSS)-objdump   # 反汇编
+OBJDUMP   = $(CROSS)-objdump   # 反汇编（反斜杠版用于 cmd /c 的 > 重定向）
+OD_WIN    = $(subst /,\,$(OBJDUMP))
 SIZE      = $(CROSS)-size      # 段大小统计
+PYTHON    = python
 
 # ================================================================
 # 二、编译参数
@@ -108,8 +112,8 @@ $(OUT)/main.o: main.c
 # -d: 反汇编所有代码段   -S: 穿插 C 源码
 # 用于验证编译器实际生成的每条指令是否正确
 $(DUMP): $(ELF)
-	$(OBJDUMP) -d -S $< > $@
-	@python $(ANNOTATE) $@ $(OUT)/program_annotated.dump
+	$(OD_WIN) -d -S $< > $@
+	$(PYTHON) $(ANNOTATE) $@ $(OUT)/program_annotated.dump
 
 # ----------------------------------------------------------------
 # 4.5 Verilog hex 导出：ELF → .verilog
@@ -134,10 +138,10 @@ $(VERILOG): $(ELF)
 #   运行时 data/bss 全部由 crt0.S 初始化，不需要预加载。
 mif: $(ELF) $(VERILOG)
 	$(OBJCOPY) -O binary -j .text -j .rodata $(ELF) $(TEXT_BIN)
-	python $(BIN2HEX) $(TEXT_BIN) $(BIN_HEX)
-	python $(TXT2MIF) $(BIN_HEX) $(ROM_MIF)
-	python $(GEN_MIF) -i $(VERILOG) -o $(RAM_MIF) --base 0x1000
-	python -c "import shutil; shutil.copy('$(BIN_HEX)', '$(ROM_HEX)')"
+	$(PYTHON) $(BIN2HEX) $(TEXT_BIN) $(BIN_HEX)
+	$(PYTHON) $(TXT2MIF) $(BIN_HEX) $(ROM_MIF)
+	$(PYTHON) $(GEN_MIF) -i $(VERILOG) -o $(RAM_MIF) --base 0x1000
+	$(PYTHON) -c "import shutil; shutil.copy('$(BIN_HEX)', '$(ROM_HEX)')"
 
 # ----------------------------------------------------------------
 # 4.7 清理
