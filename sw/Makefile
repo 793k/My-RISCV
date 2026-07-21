@@ -55,7 +55,7 @@ LDFLAGS  += -nostdlib -nostartfiles
 # ================================================================
 OUT = output
 
-OBJS      = $(OUT)/crt0.o $(OUT)/syscalls.o $(OUT)/main.o
+OBJS      = $(OUT)/crt0.o $(OUT)/trap_handler.o $(OUT)/syscalls.o $(OUT)/main.o
 ELF       = $(OUT)/program.elf
 DUMP      = $(OUT)/program.dump
 VERILOG   = $(OUT)/program.verilog
@@ -104,6 +104,9 @@ $(OUT)/syscalls.o: syscalls.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OUT)/main.o: main.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OUT)/trap_handler.o: trap_handler.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # ----------------------------------------------------------------

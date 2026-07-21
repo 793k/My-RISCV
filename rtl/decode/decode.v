@@ -3,6 +3,7 @@ module decode (
     input  wire [31:0] pc_i,
     output wire [ 4:0] rd_idx_o,
     output wire [ 5:0] instr_sel_o,
+    output wire [11:0] csr_addr_o,
 
     output wire [ 4:0] rs1_idx_o,
     input  wire [31:0] rs1_val_i,
@@ -45,30 +46,40 @@ module decode (
         .opcode   (opcode),
         .funct3   (funct3),
         .funct7   (funct7),
+        .instr_hi (instr_i[31:20]),
         .instr_sel(instr_sel_o),
         .op_type  (op_type_o)
     );
+
+    assign csr_addr_o = instr_i[31:20];
 
     always @(*) begin
         alu_a_o = rs1_val_i;
 
         case (op_type_o)
-            `op_sel_I      : alu_b_o = imm_I;
-            `op_sel_I_shamt: alu_b_o = {27'b0, shamt};
-            `op_sel_R      : alu_b_o = rs2_val_i;
-            `op_sel_branch : alu_b_o = rs2_val_i;
-            `op_sel_U      : alu_b_o = imm_U;
-            default        : alu_b_o = rs2_val_i;
+            `op_sel_I        : alu_b_o = imm_I;
+            `op_sel_I_shamt  : alu_b_o = {27'b0, shamt};
+            `op_sel_R        : alu_b_o = rs2_val_i;
+            `op_sel_branch   : alu_b_o = rs2_val_i;
+            `op_sel_U        : alu_b_o = imm_U;
+            `op_sel_SYSTEM_i : begin
+                alu_a_o = {27'd0, instr_i[19:15]};
+                alu_b_o = 32'd0;
+            end
+            `op_sel_SYSTEM   : alu_b_o = 32'd0;
+            default          : alu_b_o = rs2_val_i;
         endcase
 
         jump_base_o = pc_i;
 
         case (op_type_o)
-            `op_sel_J_jal : jump_offs_o = imm_jal;
-            `op_sel_J_jalr: jump_offs_o = imm_jalr;
-            `op_sel_S     : jump_offs_o = imm_S;
-            `op_sel_L     : jump_offs_o = imm_L;
-            default       : jump_offs_o = imm_branch;
+            `op_sel_J_jal   : jump_offs_o = imm_jal;
+            `op_sel_J_jalr  : jump_offs_o = imm_jalr;
+            `op_sel_S       : jump_offs_o = imm_S;
+            `op_sel_L       : jump_offs_o = imm_L;
+            `op_sel_SYSTEM,
+            `op_sel_SYSTEM_i: jump_offs_o = 32'd0;
+            default         : jump_offs_o = imm_branch;
         endcase
     end
 

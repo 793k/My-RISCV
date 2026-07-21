@@ -16,20 +16,24 @@
 `define opcode_J_jalr   7'b1100111   // I-type JALR
 `define opcode_L        7'b0000011   // J-type Store
 `define opcode_S        7'b0100011   // I-type Load
+`define opcode_SYSTEM   7'b1110011   // SYSTEM (CSR / trap / MRET)
+`define opcode_FENCE    7'b0001111   // FENCE / FENCE.I
 // ============================================================
 // 操作类型选择 (op_sel)
 // ============================================================
 
-`define op_sel_defaut  5'd0          // 默认值
-`define op_sel_I       5'd1          // I-type (imm_I)
-`define op_sel_I_shamt 5'd2          // I-type shift (imm_shamt)
-`define op_sel_R       5'd3          // R-type (rs2)
-`define op_sel_branch  5'd4          // B-type (rs2)
-`define op_sel_U       5'd5          // U-type (imm_U)
-`define op_sel_J_jal   5'd6          // J-type JAL (imm_jal)
-`define op_sel_J_jalr  5'd7          // I-type JALR (imm_jalr)
-`define op_sel_S       5'd8          // I-type JALR (imm_Store)
-`define op_sel_L       5'd9          // I-type JALR (imm_Load)
+`define op_sel_defaut    5'd0        // 默认值
+`define op_sel_I         5'd1        // I-type (imm_I)
+`define op_sel_I_shamt   5'd2        // I-type shift (imm_shamt)
+`define op_sel_R         5'd3        // R-type (rs2)
+`define op_sel_branch    5'd4        // B-type (rs2)
+`define op_sel_U         5'd5        // U-type (imm_U)
+`define op_sel_J_jal     5'd6        // J-type JAL (imm_jal)
+`define op_sel_J_jalr    5'd7        // I-type JALR (imm_jalr)
+`define op_sel_S         5'd8        // S-type Store
+`define op_sel_L         5'd9        // I-type Load
+`define op_sel_SYSTEM    5'd10       // SYSTEM (CSR/ECALL/EBREAK/MRET)
+`define op_sel_SYSTEM_i  5'd11       // SYSTEM CSR 立即数版 (rs1 = uimm)
 // ============================================================
 // funct3 常量 - I-type
 // ============================================================
@@ -135,3 +139,26 @@
 `define instr_sel_sb   6'd34
 `define instr_sel_sh   6'd35
 `define instr_sel_sw   6'd36
+
+`define instr_sel_ecall   6'd37
+`define instr_sel_ebreak  6'd38
+`define instr_sel_csrrw   6'd39
+`define instr_sel_csrrs   6'd40
+`define instr_sel_csrrc   6'd41
+`define instr_sel_csrrwi  6'd42
+`define instr_sel_csrrsi  6'd43
+`define instr_sel_csrrci  6'd44
+`define instr_sel_mret    6'd45
+`define instr_sel_fence   6'd46
+
+// ============================================================
+// funct3 常量 - SYSTEM (CSR / trap)
+// ============================================================
+
+`define funct3_SYS_ecall_ebreak_mret 3'b000
+`define funct3_SYS_csrrw             3'b001
+`define funct3_SYS_csrrs             3'b010
+`define funct3_SYS_csrrc             3'b011
+`define funct3_SYS_csrrwi            3'b101
+`define funct3_SYS_csrrsi            3'b110
+`define funct3_SYS_csrrci            3'b111

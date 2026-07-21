@@ -1,6 +1,7 @@
 // UART 控制器：寄存器接口 + TX/RX FIFO + 中断
 // 寄存器：0x0=DATA  0x4=STATUS  0x8=CTRL  0xC=BAUD
-// STATUS: bit[0]=tx_full [1]=rx_empty [2]=tx_busy [3]=rx_overrun
+// STATUS: bit[0]=tx_full [1]=rx_empty [2]=tx_busy [3]=rx_overrun [4]=tx_done
+//          tx_done: TX 发完锁存, 写 1 清除 (不清则 irq 持续)
 // CTRL:   bit[0]=en [1]=tx_ie [2]=rx_ie
 module uart #(
     parameter CLK_HZ       = 48000000,
@@ -27,6 +28,7 @@ module uart #(
     reg [15:0] baud_div;
     reg [2:0]  ctrl;
     reg        rx_overrun;
+    reg        tx_done;          // TX 发完锁存标志, 写 1 清
     wire       uart_en  = ctrl[0];
     wire       tx_ie    = ctrl[1];
     wire       rx_ie    = ctrl[2];
@@ -64,6 +66,7 @@ module uart #(
             tx_busy    <= 0;
             txd_o      <= 1'b1;
             tx_rd_ptr  <= 0;
+            tx_done    <= 1'b0;
         end else begin
             case (tx_state)
                 TX_IDLE: begin
@@ -100,6 +103,7 @@ module uart #(
                         tx_clk_cnt <= 0;
                         tx_state   <= TX_IDLE;
                         tx_busy    <= 1'b0;
+                        if (tx_empty) tx_done <= 1'b1;
                     end else tx_clk_cnt <= tx_clk_cnt + 1'b1;
                 end
             endcase
@@ -178,8 +182,10 @@ module uart #(
         end else begin
             if (rx_overrun_set)
                 rx_overrun <= 1'b1;
-            else if (wen_i && addr_i[3:0] == STAT)
+            else if (wen_i && addr_i[3:0] == STAT) begin
                 rx_overrun <= rx_overrun & ~wdata_i[3];
+                tx_done    <= tx_done    & ~wdata_i[4];
+            end
 
             if (wen_i) begin
                 case (addr_i[3:0])
@@ -198,7 +204,7 @@ module uart #(
                         rdata_o <= {24'd0, rx_fifo[rx_rd_ptr[$clog2(FIFO_DEPTH)-1:0]]};
                         if (!rx_empty) rx_rd_ptr <= rx_rd_ptr + 1'b1;
                     end
-                    STAT: rdata_o <= {28'd0, rx_overrun, tx_busy, rx_empty, tx_full};
+                    STAT: rdata_o <= {27'd0, tx_done, rx_overrun, tx_busy, rx_empty, tx_full};
                     CTRL: rdata_o <= {29'd0, ctrl};
                     BAUD: rdata_o <= {16'd0, baud_div};
                     default: rdata_o <= 0;
@@ -208,6 +214,6 @@ module uart #(
     end
 
     assign ready_o = 1'b1;
-    assign irq_o   = (tx_empty && !tx_busy && tx_ie) || (!rx_empty && rx_ie);
+    assign irq_o   = (tx_done && tx_ie) || (!rx_empty && rx_ie);
 
 endmodule

@@ -21,6 +21,7 @@ module pipe_id_ex (
     input  wire [ 4:0] rs2_idx_i,
     input  wire [ 5:0] instr_sel_i,
     input  wire [ 4:0] op_type_i,
+    input  wire [11:0] csr_addr_i,
 
     // EX 阶段输出（前递后）
     output reg  [31:0] alu_a_fwd_o,
@@ -33,7 +34,8 @@ module pipe_id_ex (
     output reg  [ 4:0] rd_idx_o,
     output reg  [ 4:0] rs1_idx_o,
     output reg  [ 4:0] rs2_idx_o,
-    output reg  [ 4:0] op_type_o
+    output reg  [ 4:0] op_type_o,
+    output reg  [11:0] csr_addr_o
 );
 
     `include "../decode/decode_params.vh"
@@ -58,6 +60,7 @@ module pipe_id_ex (
             rs2_idx_o     <= 5'd0;
             reg_instr_sel <= `instr_sel_addi;  // NOP
             op_type_o     <= `op_sel_I;
+            csr_addr_o    <= 12'd0;
         end else if (flush) begin
             reg_alu_a     <= 32'd0;
             reg_alu_b     <= 32'd0;
@@ -68,6 +71,7 @@ module pipe_id_ex (
             rs2_idx_o     <= 5'd0;
             reg_instr_sel <= `instr_sel_addi;  // NOP
             op_type_o     <= `op_sel_I;
+            csr_addr_o    <= 12'd0;
         end else begin
             reg_alu_a     <= alu_a_i;
             reg_alu_b     <= alu_b_i;
@@ -78,6 +82,7 @@ module pipe_id_ex (
             rs2_idx_o     <= rs2_idx_i;
             reg_instr_sel <= instr_sel_i;
             op_type_o     <= op_type_i;
+            csr_addr_o    <= csr_addr_i;
         end
     end
 

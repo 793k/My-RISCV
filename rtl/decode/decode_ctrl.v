@@ -9,6 +9,7 @@ module decode_ctrl (
     input  wire [6:0] opcode,
     input  wire [2:0] funct3,
     input  wire [6:0] funct7,
+    input  wire [11:0] instr_hi,
     output reg  [5:0] instr_sel,
     output reg  [4:0] op_type
 );
@@ -144,6 +145,34 @@ module decode_ctrl (
                     default         : ;
                 endcase
             end
+
+            `opcode_SYSTEM: begin
+                case (funct3)
+                    `funct3_SYS_ecall_ebreak_mret: begin
+                        case (instr_hi)
+                            12'h000:  instr_sel = `instr_sel_ecall;
+                            12'h001:  instr_sel = `instr_sel_ebreak;
+                            12'h302:  instr_sel = `instr_sel_mret;
+                            12'h105:  instr_sel = `instr_sel_fence;
+                            default:  instr_sel = `instr_sel_fence;
+                        endcase
+                        op_type = `op_sel_SYSTEM;
+                    end
+                    `funct3_SYS_csrrw:  begin instr_sel = `instr_sel_csrrw;  op_type = `op_sel_SYSTEM;   end
+                    `funct3_SYS_csrrs:  begin instr_sel = `instr_sel_csrrs;  op_type = `op_sel_SYSTEM;   end
+                    `funct3_SYS_csrrc:  begin instr_sel = `instr_sel_csrrc;  op_type = `op_sel_SYSTEM;   end
+                    `funct3_SYS_csrrwi: begin instr_sel = `instr_sel_csrrwi; op_type = `op_sel_SYSTEM_i; end
+                    `funct3_SYS_csrrsi: begin instr_sel = `instr_sel_csrrsi; op_type = `op_sel_SYSTEM_i; end
+                    `funct3_SYS_csrrci: begin instr_sel = `instr_sel_csrrci; op_type = `op_sel_SYSTEM_i; end
+                    default: ;
+                endcase
+            end
+
+            `opcode_FENCE: begin
+                instr_sel = `instr_sel_fence;
+                op_type   = `op_sel_defaut;
+            end
+
             default: ;
         endcase
     end

@@ -69,6 +69,9 @@ module CPU (
     wire [31:0] id_jump_offs;  // 跳转偏移量
     wire [ 4:0] id_op_type;  // 操作类型选择
 
+    wire [11:0] id_csr_addr;
+    wire [11:0] ex_csr_addr;
+
     // ============================================================
     // ID/EX 流水线寄存器输出（EX 阶段输入）
     // ============================================================
@@ -96,6 +99,25 @@ module CPU (
     wire        ex_mem_wr_en;
     wire [31:0] ex_mem_rd_idx;
     wire [31:0] ex_mem_rd_val;
+
+    wire        ex_mret;
+    wire        ex_csr_we;
+    wire [11:0] ex_csr_waddr;
+    wire [31:0] ex_csr_wdata;
+
+    wire        trap_taken;
+    wire [31:0] trap_pc;
+    wire [31:0] trap_cause;
+    wire [31:0] trap_tval;
+
+    wire [31:0] csr_rdata;
+    wire [31:0] csr_mepc;
+    wire [31:0] csr_mtvec;
+    wire        csr_mstatus_mie;
+    wire [31:0] csr_mie;
+    wire [31:0] csr_mip;
+
+    wire uart_irq;
     // ============================================================
     // EX/MEM 流水线寄存器输出 → 总线信号（MEM 阶段输入）//总线命名规则，bus总线输出，rsp总线读取，cs为片选信号
     // ============================================================
@@ -156,11 +178,13 @@ module CPU (
 
     assign stall = 1'b0;
 
-    assign flush = ex_jump_en;
+    assign flush = ex_jump_en | trap_taken;
 
-    assign pc_jump_en = ex_jump_en | stall;
+    assign pc_jump_en = ex_jump_en | trap_taken;
 
-    assign pc_jump_addr = ex_jump_en ? ex_jump_target : if_pc;
+    assign pc_jump_addr = ex_jump_en ? ex_jump_target :
+                           trap_taken ? csr_mtvec :
+                           if_pc;
 
     assign sys_rst_n = rst_n & pll_locked;
 
@@ -227,6 +251,7 @@ module CPU (
         .pc_i       (id_pc),
         .rd_idx_o   (id_rd_idx),
         .instr_sel_o(id_instr_sel),
+        .csr_addr_o (id_csr_addr),
         .rs1_idx_o  (id_rs1_idx),
         .rs1_val_i  (id_rs1_val),
         .rs2_idx_o  (id_rs2_idx),
@@ -275,6 +300,7 @@ module CPU (
         .rs2_idx_i  (id_rs2_idx),
         .instr_sel_i(id_instr_sel),
         .op_type_i  (id_op_type),
+        .csr_addr_i (id_csr_addr),
 
         .alu_a_fwd_o(ex_alu_a_fwd),
         .alu_b_fwd_o(ex_alu_b_fwd),
@@ -284,7 +310,8 @@ module CPU (
         .rd_idx_o   (ex_rd_idx),
         .rs1_idx_o  (ex_rs1_idx),
         .rs2_idx_o  (ex_rs2_idx),
-        .op_type_o  (ex_op_type)
+        .op_type_o  (ex_op_type),
+        .csr_addr_o (ex_csr_addr)
     );
 
     // ============================================================
@@ -297,6 +324,9 @@ module CPU (
         .jump_base_i  (ex_jump_base),
         .jump_offs_i  (ex_jump_offs),
         .instr_sel_i  (ex_instr_sel),
+        .csr_addr_i   (ex_csr_addr),
+        .csr_rdata_i  (csr_rdata),
+        .mepc_i       (csr_mepc),
 
         .jump_en_o    (ex_jump_en),
         .jump_target_o(ex_jump_target),//跳转指令不经过mem和wr阶段
@@ -306,7 +336,46 @@ module CPU (
     
         .mem_wr_en_o  (ex_mem_wr_en),
         .mem_rd_idx_o (ex_mem_rd_idx),
-        .mem_rd_val_o (ex_mem_rd_val)//用于mem阶段的值
+        .mem_rd_val_o (ex_mem_rd_val),//用于mem阶段的值
+
+        .mret_o       (ex_mret),
+        .csr_we_o     (ex_csr_we),
+        .csr_waddr_o  (ex_csr_waddr),
+        .csr_wdata_o  (ex_csr_wdata)
+    );
+
+    trap_ctrl u_trap_ctrl (
+        .clk          (clk_sys),
+        .rst_n        (sys_rst_n),
+        .instr_sel_i  (ex_instr_sel),
+        .ex_pc_i      (ex_jump_base),
+        .mstatus_mie_i(csr_mstatus_mie),
+        .mie_i        (csr_mie),
+        .mip_i        (csr_mip),
+        .trap_taken_o (trap_taken),
+        .trap_pc_o    (trap_pc),
+        .trap_cause_o (trap_cause),
+        .trap_tval_o  (trap_tval)
+    );
+
+    csr_regfile u_csr (
+        .clk         (clk_sys),
+        .rst_n       (sys_rst_n),
+        .csr_we_i    (ex_csr_we & ~trap_taken),
+        .csr_addr_i  (ex_csr_waddr),
+        .csr_wdata_i (ex_csr_wdata),
+        .csr_rdata_o (csr_rdata),
+        .trap_taken_i(trap_taken),
+        .trap_pc_i   (trap_pc),
+        .trap_cause_i(trap_cause),
+        .trap_tval_i (trap_tval),
+        .mret_i      (ex_mret),
+        .ext_irq_i   (uart_irq),
+        .mtvec_o     (csr_mtvec),
+        .mepc_o      (csr_mepc),
+        .mstatus_mie_o(csr_mstatus_mie),
+        .mie_o       (csr_mie),
+        .mip_o       (csr_mip)
     );
 
     // ============================================================
@@ -386,7 +455,7 @@ module CPU (
         .ready_o (),
         .txd_o   (uart_txd),
         .rxd_i   (1'b1),
-        .irq_o   ()
+        .irq_o   (uart_irq)
     );
 
     // ============================================================
